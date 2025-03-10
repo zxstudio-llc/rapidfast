@@ -15,9 +15,10 @@
     "test": "echo \"No test specified\" && exit 0",
     "dev": "nodemon --watch src --exec ts-node src/index.ts",
     "start": "node dist/index.js",
-    "publish:npm": "npm publish --access=public",
-    "publish:github": "npm publish --registry=https://npm.pkg.github.com --scope=@angelitosystems",
-    "publish:all": "npm run bump && npm run publish:npm && (npm run publish:github || echo 'GitHub Packages publicación omitida')",
+    "publish:npm": "npm publish --access=public --registry=https://registry.npmjs.org/",
+    "publish:github": "npm config set //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN} && npm publish --registry=https://npm.pkg.github.com --scope=@angelitosystems",
+    "publish:all": "npm run publish:npm",
+    "publish:all:github": "npm run publish:npm && npm run publish:github",
     "bump": "node scripts/bump-version.js",
     "bump:minor": "node scripts/bump-version.js minor",
     "bump:major": "node scripts/bump-version.js major"
@@ -84,7 +85,7 @@
   "type": "commonjs",
   "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0",
   "publishConfig": {
-    "@angelitosystems:registry": "https://npm.pkg.github.com",
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   }
 }
