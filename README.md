@@ -1,7 +1,7 @@
 # RapidFAST Framework
 
 [![npm version](https://img.shields.io/npm/v/@angelito-systems/rapidfast.svg)](https://www.npmjs.com/package/@angelito-systems/rapidfast)
-[![GitHub Package](https://img.shields.io/badge/GitHub%20Package-1.0.1-blue)](https://github.com/Angelito-Systems/rapidfast/packages)
+[![GitHub Package](https://img.shields.io/badge/GitHub%20Package-1.0.2-blue)](https://github.com/Angelito-Systems/rapidfast/packages)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Un framework moderno para el desarrollo de APIs RESTful con TypeScript y Express, utilizando decoradores similares a NestJS pero más ligeros.

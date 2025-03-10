@@ -16,8 +16,8 @@
     "dev": "nodemon --watch src --exec ts-node src/index.ts",
     "start": "node dist/index.js",
     "publish:npm": "npm publish --access=public",
-    "publish:github": "npm publish --registry=https://npm.pkg.github.com",
-    "publish:all": "npm run bump && npm run publish:npm && npm run publish:github",
+    "publish:github": "npm publish --registry=https://npm.pkg.github.com --scope=@angelitosystems",
+    "publish:all": "npm run bump && npm run publish:npm && (npm run publish:github || echo 'GitHub Packages publicación omitida')",
     "bump": "node scripts/bump-version.js",
     "bump:minor": "node scripts/bump-version.js minor",
     "bump:major": "node scripts/bump-version.js major"
