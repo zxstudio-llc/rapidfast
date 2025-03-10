@@ -67,16 +67,16 @@ RapidFAST incluye un CLI para facilitar la creación de proyectos y componentes:
 
 ```bash
 # Crear un nuevo proyecto
-npx @angelito-systems/rapidfast new mi-proyecto
+rapidfast new mi-proyecto
 
 # Generar un controlador
-npx @angelito-systems/rapidfast g:c usuarios
+rapidfast g:c usuarios
 
 # Generar un controlador con operaciones CRUD
-npx @angelito-systems/rapidfast g:c usuarios --resource
+rapidfast g:c usuarios --resource
 
 # Generar un módulo
-npx @angelito-systems/rapidfast g:m autenticacion
+rapidfast g:m autenticacion
 ```
 
 ## Documentación
