@@ -21,7 +21,7 @@ export async function generateController(name: string, options: GenerateControll
       .join('') + 'Controller';
 
     // Determinar la ruta donde se generará el controlador
-    const basePath = options.path || 'src/controllers';
+    const basePath = options.path || '.'; // Usar directorio actual en lugar de src/controllers
     const fullPath = path.resolve(process.cwd(), basePath);
     
     // Verificar si el directorio existe, si no, crearlo

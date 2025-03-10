@@ -5,9 +5,11 @@ import figlet from 'figlet';
 import boxen from 'boxen';
 import { createProject } from '../create-project';
 import { initCLI } from '../init';
-import { execSync } from 'child_process';
+import { execSync, spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+// Importación directa de chokidar (ya incluye sus propios tipos)
+import chokidar from 'chokidar';
 
 const program = new Command();
 const packageJson = require('../../../package.json');
@@ -15,6 +17,7 @@ const packageJson = require('../../../package.json');
 // Mostrar banner de bienvenida
 console.log('\n' + chalk.cyan(figlet.textSync('RapidFAST', { font: 'Small' })));
 
+// Mostrar información del CLI
 console.log(boxen(
   chalk.bold('⚡ RapidFAST Framework CLI v' + packageJson.version) + '\n' +
   chalk.gray('Cree aplicaciones web modernas rápidamente con TypeScript y Express'),
@@ -99,16 +102,16 @@ program
         process.exit(1);
       }
       
-      // Verificar si nodemon está instalado
+      // Verificar si ts-node está instalado y chokidar
       try {
         const nodeModulesPath = path.join(cwd, 'node_modules', '.bin');
-        const nodemonPath = path.join(nodeModulesPath, process.platform === 'win32' ? 'nodemon.cmd' : 'nodemon');
+        const tsNodePath = path.join(nodeModulesPath, process.platform === 'win32' ? 'ts-node.cmd' : 'ts-node');
         
-        if (!fs.existsSync(nodemonPath)) {
-          console.log(chalk.yellow('⚠️ No se encontró nodemon instalado localmente. Instalando dependencias necesarias...'));
+        if (!fs.existsSync(tsNodePath)) {
+          console.log(chalk.yellow('⚠️ No se encontró ts-node instalado localmente. Instalando dependencias necesarias...'));
           
-          // Instalar las dependencias necesarias
-          execSync('npm install --no-save nodemon ts-node typescript', { 
+          // Instalar solo dependencias esenciales, sin nodemon
+          execSync('npm install --no-save ts-node typescript chokidar', { 
             cwd, 
             stdio: 'inherit' as const
           });
@@ -124,75 +127,138 @@ program
         process.env.PORT = options.port;
         process.env.HOST = options.host;
         
-        // Usar el comando con ruta absoluta si es posible
-        const devCommand = packageData.scripts.dev;
         const nodeModulesBin = path.join(cwd, 'node_modules', '.bin');
         
-        // Ejecutar el script de desarrollo
-        console.log(chalk.blue('▶️ Ejecutando servidor en modo desarrollo...'));
+        // Renombrar para indicar que es parte de RapidFAST
+        let serverProcess: ChildProcess | null = null;
+        let isRestarting = false;
         
-        // En Windows, usar la sintaxis adecuada para la shell
-        const execOptions = { 
-          stdio: 'inherit' as const,
-          env: { ...process.env, PATH: `${nodeModulesBin}${path.delimiter}${process.env.PATH}` },
-          cwd
+        // Función para iniciar el servidor
+        const startServer = () => {
+          const execEnv = { 
+            ...process.env, 
+            PATH: `${nodeModulesBin}${path.delimiter}${process.env.PATH}` 
+          };
+          
+          const tsNodeCmd = process.platform === 'win32' ? 'ts-node.cmd' : 'ts-node';
+          const tsNodePath = path.join(nodeModulesBin, tsNodeCmd);
+          
+          console.log(chalk.blue('▶️ Iniciando servidor...'));
+          
+          // Si estamos en windows, usar spawn con opciones específicas
+          if (process.platform === 'win32') {
+            serverProcess = spawn(tsNodePath, ['src/main.ts'], {
+              cwd,
+              env: execEnv,
+              stdio: 'inherit',
+              shell: true
+            });
+          } else {
+            serverProcess = spawn(tsNodePath, ['src/main.ts'], {
+              cwd,
+              env: execEnv,
+              stdio: 'inherit'
+            });
+          }
+          
+          serverProcess.on('error', (error) => {
+            console.error(chalk.red(`❌ Error al iniciar el servidor: ${error.message}`));
+            if (!isRestarting) process.exit(1);
+          });
+          
+          serverProcess.on('exit', (code, signal) => {
+            if (code !== null && code !== 0 && !isRestarting) {
+              console.error(chalk.red(`❌ El servidor se cerró con código de salida: ${code}`));
+            }
+            
+            if (signal === 'SIGTERM' && !isRestarting) {
+              console.log(chalk.yellow('\n🛑 Servidor detenido'));
+              process.exit(0);
+            }
+          });
+          
+          return serverProcess;
         };
         
-        try {
-          if (process.platform === 'win32') {
-            execSync(`npx nodemon --watch src --exec npx ts-node src/main.ts`, execOptions);
-          } else {
-            execSync(devCommand, execOptions);
-          }
-        } catch (error: any) {
-          // Error normal al terminar el proceso con Ctrl+C
-          if (error.signal === 'SIGINT') {
-            console.log(chalk.yellow('\n\n🛑 Servidor detenido'));
-            return;
-          }
+        // Función para reiniciar el servidor
+        const restartServer = () => {
+          if (isRestarting) return;
+          isRestarting = true;
           
-          console.error(chalk.red('\n❌ Error al ejecutar el servidor:'));
+          console.log(chalk.yellow('\n🔄 Detectados cambios en archivos. Reiniciando servidor...'));
           
-          // Si hay un error de módulo no encontrado, mostrar información útil
-          if (error.message && error.message.includes('Cannot find module')) {
-            const moduleMatch = /Cannot find module '([^']+)'/.exec(error.message);
-            const missingModule = moduleMatch ? moduleMatch[1] : 'desconocido';
-            
-            console.error(chalk.yellow(`\nError de importación: No se pudo encontrar el módulo "${chalk.bold(missingModule)}"`));
-            console.error(chalk.cyan('\nSoluciones posibles:'));
-            console.error(chalk.white('1. Asegúrate de que las rutas de importación sean correctas'));
-            console.error(chalk.white('2. Verifica la estructura de directorios del proyecto'));
-            console.error(chalk.white('3. Intenta ejecutar `npm install` para reinstalar las dependencias'));
-            
-            // Intentar arreglar automáticamente el problema
-            console.log(chalk.blue('\n🔧 Intentando resolver el problema automáticamente...'));
-            
-            try {
-              // Instalar dependencias si falta alguna
-              execSync('npm install', { cwd, stdio: 'inherit' as const });
-              console.log(chalk.green('✅ Dependencias reinstaladas. Intentando reiniciar...'));
+          if (serverProcess) {
+            const killPromise = new Promise<void>((resolve) => {
+              serverProcess!.on('exit', () => {
+                resolve();
+              });
               
-              // Reintentar la ejecución
-              try {
-                execSync(`npx nodemon --watch src --exec npx ts-node src/main.ts`, execOptions);
-              } catch (retryError: any) {
-                console.error(chalk.red('\n❌ No se pudo resolver automáticamente. Puede que necesites crear un nuevo proyecto.'));
+              // En Windows, es necesario usar taskkill para matar el proceso
+              if (process.platform === 'win32' && serverProcess!.pid) {
+                try {
+                  execSync(`taskkill /pid ${serverProcess!.pid} /T /F`);
+                } catch (error) {
+                  // Ignorar errores de taskkill
+                }
+              } else if (serverProcess!.pid) {
+                serverProcess!.kill('SIGTERM');
               }
-            } catch (installError) {
-              console.error(chalk.red('\n❌ No se pudieron instalar las dependencias.'));
-            }
-          } else {
-            console.error(chalk.red('Detalle:'), error);
+              
+              // Si después de 2 segundos no ha terminado, forzar
+              setTimeout(() => {
+                resolve();
+              }, 2000);
+            });
             
-            // Intentar ejecutar directamente con ts-node como último recurso
-            try {
-              console.log(chalk.yellow('\n⚠️ Intentando método alternativo con ts-node directamente...'));
-              execSync('npx ts-node src/main.ts', execOptions);
-            } catch (tsNodeError) {
-              console.error(chalk.red('\n❌ También falló el método alternativo. Por favor, crea un nuevo proyecto.'));
+            killPromise.then(() => {
+              serverProcess = null;
+              serverProcess = startServer();
+              isRestarting = false;
+            });
+          } else {
+            serverProcess = startServer();
+            isRestarting = false;
+          }
+        };
+        
+        // Iniciar el servidor por primera vez
+        serverProcess = startServer();
+        
+        // Configurar el watcher para los archivos (RapidWatch)
+        console.log(chalk.cyan('⚡ RapidWatch iniciado - Vigilando cambios en archivos...'));
+        const watcher = chokidar.watch('src/**/*.ts', {
+          ignored: /(^|[\/\\])\../, // ignorar archivos ocultos
+          persistent: true,
+          cwd
+        });
+        
+        console.log(chalk.gray('👀 RapidWatch está monitoreando cambios en tiempo real...'));
+        
+        // Configurar evento de cambio con tipado correcto
+        watcher.on('change', (filePath: string) => {
+          console.log(chalk.yellow(`📝 RapidWatch detectó cambios: ${filePath}`));
+          restartServer();
+        });
+        
+        // Manejar terminación del proceso
+        process.on('SIGINT', () => {
+          console.log(chalk.yellow('\n\n🛑 Deteniendo servidor...'));
+          watcher.close();
+          
+          if (serverProcess && serverProcess.pid) {
+            if (process.platform === 'win32') {
+              try {
+                execSync(`taskkill /pid ${serverProcess.pid} /T /F`);
+              } catch (error) {
+                // Ignorar errores de taskkill
+              }
+            } else {
+              serverProcess.kill('SIGTERM');
             }
           }
-        }
+          
+          process.exit(0);
+        });
       } else {
         console.error(chalk.red('❌ Error: Script "dev" no encontrado en package.json'));
         process.exit(1);

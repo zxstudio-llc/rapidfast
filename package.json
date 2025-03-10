@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "rapidfast": "dist/cli.js"
+    "rapidfast": "./dist/cli.js"
   },
   "scripts": {
     "build": "rimraf dist && tsc",
@@ -48,6 +48,7 @@
     "@angelitosystems/rapidfast": "^1.0.3",
     "boxen": "^5.1.2",
     "chalk": "^4.1.2",
+    "chokidar": "^3.5.3",
     "cli-progress": "^3.12.0",
     "commander": "^9.5.0",
     "dotenv": "^16.3.1",
@@ -59,7 +60,9 @@
     "log-symbols": "^4.1.0",
     "mongoose": "^7.5.0",
     "ora": "^5.4.1",
-    "reflect-metadata": "^0.1.13"
+    "reflect-metadata": "^0.1.13",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.2.2"
   },
   "devDependencies": {
     "@types/boxen": "^3.0.1",
@@ -73,7 +76,6 @@
     "@typescript-eslint/eslint-plugin": "^6.4.1",
     "@typescript-eslint/parser": "^6.4.1",
     "eslint": "^8.47.0",
-    "nodemon": "^3.0.1",
     "rimraf": "^5.0.1",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"

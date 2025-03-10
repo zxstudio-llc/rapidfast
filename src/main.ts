@@ -96,6 +96,8 @@ export class AppBootstrap {
 // Punto de entrada de la aplicación cuando se ejecuta directamente
 if (require.main === module) {
   try {
+    // Si este archivo se ejecuta directamente, proporcionar un ejemplo útil
+    // de cómo usar AppBootstrap en una aplicación real
     console.log('🚀 RapidFAST Framework: Este archivo no debe ser ejecutado directamente.');
     console.log('   Crea un archivo principal en tu aplicación que importe y use AppBootstrap.');
     console.log('   Ejemplo:');

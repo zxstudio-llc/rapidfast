@@ -28,66 +28,61 @@ export async function generateResource(options: GenerateOptions): Promise<void> 
     // Determinar directorio base y crear si no existe
     const baseDir = directory || process.cwd();
     
-    // Determinar subdirectorio según el tipo de recurso
-    let subDir = "";
+    // Ya no creamos subdirectorios específicos por tipo
+    let targetDir = baseDir;
     
-    switch(type) {
-      case 'controller':
-        subDir = path.join(baseDir, 'controllers');
-        break;
-      case 'service':
-        subDir = path.join(baseDir, 'services');
-        break;
-      case 'middleware':
-        subDir = path.join(baseDir, 'middlewares');
-        break;
-      case 'module':
-      case 'resource':
-        // Para módulos y recursos, creamos un directorio con el nombre
-        subDir = path.join(baseDir, camelName);
-        break;
+    // Solo creamos un subdirectorio para recursos/módulos si NO se especificó un directorio
+    // Esta es la modificación clave para evitar anidación innecesaria
+    if ((type === 'resource' || type === 'module') && !directory) {
+      targetDir = path.join(baseDir, camelName);
     }
     
-    await fs.ensureDir(subDir);
+    // Asegurar que toda la estructura de directorios exista
+    await fs.ensureDir(targetDir);
     
     // Generar archivos según el tipo
     const spinner = ora(`Generando ${type} ${chalk.cyan(pascalName)}...`).start();
     
     try {
       if (type === 'resource') {
-        // Generar un recurso completo (módulo + controlador + servicio)
-        await generateModule({ name, directory: subDir });
-        await generateController({ name, directory: subDir, crud });
-        await generateService({ name, directory: subDir });
+        // Generar un recurso completo (módulo + controlador + servicio) en el mismo directorio
+        await generateModule({ name, directory: targetDir });
+        await generateController({ name, directory: targetDir, crud });
+        await generateService({ name, directory: targetDir });
         
-        spinner.succeed(chalk.green(`Recurso ${pascalName} generado con éxito`));
+        // Registrar el módulo en el app.module.ts si existe
+        await registerModuleInAppModule(name, targetDir);
+        
+        spinner.succeed(chalk.green(`Recurso ${pascalName} generado con éxito en ${targetDir}`));
         
         console.log(chalk.gray('Archivos generados:'));
-        console.log(chalk.cyan(`  - ${path.join(subDir, `${camelName}.module.ts`)}`));
-        console.log(chalk.cyan(`  - ${path.join(subDir, `${camelName}.controller.ts`)}`));
-        console.log(chalk.cyan(`  - ${path.join(subDir, `${camelName}.service.ts`)}`));
+        console.log(chalk.cyan(`  - ${path.join(targetDir, `${camelName}.module.ts`)}`));
+        console.log(chalk.cyan(`  - ${path.join(targetDir, `${camelName}.controller.ts`)}`));
+        console.log(chalk.cyan(`  - ${path.join(targetDir, `${camelName}.service.ts`)}`));
       } else {
-        // Generar el recurso individual
+        // Generar el recurso individual en el directorio actual o especificado
         switch(type) {
           case 'controller':
-            await generateController({ name, directory: subDir, crud });
+            await generateController({ name, directory: targetDir, crud });
             break;
           case 'service':
-            await generateService({ name, directory: subDir });
+            await generateService({ name, directory: targetDir });
             break;
           case 'middleware':
-            await generateMiddleware({ name, directory: subDir });
+            await generateMiddleware({ name, directory: targetDir });
             break;
           case 'module':
-            await generateModule({ name, directory: subDir });
+            await generateModule({ name, directory: targetDir });
+            // Registrar el módulo en el app.module.ts si existe
+            await registerModuleInAppModule(name, targetDir);
             break;
         }
         
-        spinner.succeed(chalk.green(`${pascalName}${capitalize(type)} generado con éxito`));
+        spinner.succeed(chalk.green(`${pascalName}${capitalize(type)} generado con éxito en ${targetDir}`));
         
         // Mostrar ruta del archivo generado
         console.log(chalk.gray('Archivo generado:'));
-        console.log(chalk.cyan(`  - ${path.join(subDir, `${camelName}.${type}.ts`)}`));
+        console.log(chalk.cyan(`  - ${path.join(targetDir, `${camelName}.${type}.ts`)}`));
       }
       
       // Sugerir próximos pasos
@@ -361,4 +356,149 @@ function toPascalCase(str: string): string {
 
 function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Nueva función para registrar módulos en app.module.ts
+async function registerModuleInAppModule(name: string, targetDir: string): Promise<void> {
+  try {
+    // Buscar el app.module.ts
+    const rootDir = findProjectRoot(targetDir);
+    if (!rootDir) {
+      return; // No podemos determinar la raíz del proyecto
+    }
+    
+    const possibleAppModulePaths = [
+      path.join(rootDir, 'src/app.module.ts'),
+      path.join(rootDir, 'src/app/app.module.ts'),
+      path.join(rootDir, 'src/modules/app.module.ts')
+    ];
+    
+    let appModulePath = '';
+    for (const modulePath of possibleAppModulePaths) {
+      if (fs.existsSync(modulePath)) {
+        appModulePath = modulePath;
+        break;
+      }
+    }
+    
+    if (!appModulePath) {
+      return; // No se encontró el archivo app.module.ts
+    }
+    
+    // Leer el archivo app.module.ts
+    let content = await fs.readFile(appModulePath, 'utf8');
+    
+    // Generar las rutas relativas correctas para la importación
+    const appModuleDir = path.dirname(appModulePath);
+    const relativePathToModule = path.relative(appModuleDir, targetDir).replace(/\\/g, '/');
+    
+    const pascalName = toPascalCase(name);
+    const camelName = toCamelCase(name);
+    
+    // Verificar si el módulo ya está importado
+    const moduleImportRegex = new RegExp(`import\\s+{\\s*${pascalName}Module\\s*}\\s+from\\s+['"].*['"]`, 'g');
+    if (moduleImportRegex.test(content)) {
+      return; // El módulo ya está importado
+    }
+    
+    // Determinar dónde agregar la importación
+    const lastImportIndex = content.lastIndexOf('import ');
+    if (lastImportIndex === -1) {
+      return; // No hay imports para usar como referencia
+    }
+    
+    // Encontrar el final de la última importación
+    const endOfLastImport = content.indexOf(';', lastImportIndex) + 1;
+    
+    // Agregar la importación del nuevo módulo después de la última importación
+    const importStatement = `\nimport { ${pascalName}Module } from './${relativePathToModule}/${camelName}.module';`;
+    content = content.slice(0, endOfLastImport) + importStatement + content.slice(endOfLastImport);
+    
+    // Buscar el decorador @Module para agregar el módulo a los imports
+    const moduleDecoratorRegex = /@Module\s*\(\s*{/g;
+    const moduleMatch = moduleDecoratorRegex.exec(content);
+    
+    if (!moduleMatch) {
+      return; // No se encuentra el decorador @Module
+    }
+    
+    // Buscar la sección de imports
+    const importsRegex = /imports\s*:\s*\[([\s\S]*?)\]/g;
+    const importsMatch = importsRegex.exec(content);
+    
+    if (importsMatch) {
+      // Si ya hay una sección de imports, agregamos el nuevo módulo al final de la lista
+      const imports = importsMatch[1].trim();
+      const insertPoint = content.indexOf(']', importsMatch.index + importsMatch[0].indexOf('['));
+      
+      // Si los imports no están vacíos, agregamos una coma primero
+      const moduleToAdd = imports ? `,\n    ${pascalName}Module` : `\n    ${pascalName}Module\n  `;
+      content = content.slice(0, insertPoint) + moduleToAdd + content.slice(insertPoint);
+    } else {
+      // Si no hay sección de imports, la creamos después de una sección conocida (controllers o providers)
+      const knownSections = ['controllers', 'providers', 'exports'];
+      let insertAfterSection = null;
+      let insertPosition = -1;
+      
+      for (const section of knownSections) {
+        const sectionRegex = new RegExp(`${section}\\s*:\\s*\\[(([\\s\\S]*?)])`);
+        const sectionMatch = sectionRegex.exec(content);
+        
+        if (sectionMatch) {
+          const sectionEndIndex = sectionMatch.index + sectionMatch[0].length;
+          if (sectionEndIndex > insertPosition) {
+            insertPosition = sectionEndIndex;
+            insertAfterSection = section;
+          }
+        }
+      }
+      
+      if (insertPosition > -1) {
+        const insertImportsSection = `,\n  imports: [\n    ${pascalName}Module\n  ]`;
+        content = content.slice(0, insertPosition) + insertImportsSection + content.slice(insertPosition);
+      } else {
+        // Si no encontramos ninguna sección conocida, insertamos después de la apertura del objeto @Module({
+        const moduleObjStart = content.indexOf('{', moduleMatch.index);
+        if (moduleObjStart > -1) {
+          const importsSection = `\n  imports: [\n    ${pascalName}Module\n  ],`;
+          content = content.slice(0, moduleObjStart + 1) + importsSection + content.slice(moduleObjStart + 1);
+        }
+      }
+    }
+    
+    // Escribir el archivo actualizado
+    await fs.writeFile(appModulePath, content);
+    
+    console.log(chalk.green(`✅ ${pascalName}Module registrado automáticamente en ${path.relative(process.cwd(), appModulePath)}`));
+  } catch (error: unknown) {
+    console.warn(chalk.yellow('Aviso: No se pudo registrar automáticamente el módulo en app.module.ts'));
+    
+    // Verificar si el error es una instancia de Error antes de acceder a message
+    if (error instanceof Error) {
+      console.warn(chalk.gray(`Razón: ${error.message}`));
+    } else {
+      console.warn(chalk.gray('Razón desconocida'));
+    }
+  }
+}
+
+// Función auxiliar para encontrar la raíz del proyecto
+function findProjectRoot(startDir: string): string | null {
+  let currentDir = startDir;
+  
+  // Recorrer hasta 10 niveles arriba buscando el package.json
+  for (let i = 0; i < 10; i++) {
+    if (fs.existsSync(path.join(currentDir, 'package.json'))) {
+      return currentDir;
+    }
+    
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) {
+      return null; // Llegamos a la raíz del sistema sin encontrar package.json
+    }
+    
+    currentDir = parentDir;
+  }
+  
+  return null;
 }

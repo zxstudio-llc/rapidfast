@@ -23,17 +23,34 @@ export async function createProject(
   options: CreateProjectOptions
 ): Promise<void> {
   try {
-    // Determinar el directorio de destino
-    const targetDir = options.directory || projectName;
-    const projectPath = path.resolve(process.cwd(), targetDir);
+    // Validar que el nombre no contenga caracteres especiales o rutas
+    if (projectName.includes('/') || projectName.includes('\\')) {
+      throw new Error(`El nombre del proyecto no puede contener barras (/ o \\). Usa la opción --directory para especificar una ruta.`);
+    }
 
+    // Determinar el directorio de destino
+    let targetDir: string;
+    
+    if (options.directory) {
+      // Si se especificó un directorio, usarlo como ruta completa o relativa
+      targetDir = path.isAbsolute(options.directory)
+        ? options.directory
+        : path.resolve(process.cwd(), options.directory);
+    } else {
+      // Si no se especificó directorio, crear en el directorio actual + nombre del proyecto
+      targetDir = path.resolve(process.cwd(), projectName);
+    }
+    
+    // Mostrar la ruta donde se creará el proyecto
+    console.log(chalk.blue(`📁 Creando proyecto en: ${targetDir}`));
+    
     // Verificar si el directorio ya existe
-    if (fs.existsSync(projectPath)) {
+    if (fs.existsSync(targetDir)) {
       console.log(
         boxen(
           chalk.yellow(
             `${logSymbols.warning} El directorio ${chalk.bold(
-              targetDir
+              path.basename(targetDir)
             )} ya existe.`
           ),
           { padding: 1, borderColor: "yellow", borderStyle: "round" }
@@ -55,8 +72,33 @@ export async function createProject(
       }
     }
 
+    // Verificar permisos de escritura antes de proceder
+    try {
+      // Verificar si tenemos permisos en el directorio padre
+      const parentDir = path.dirname(targetDir);
+      if (!fs.existsSync(parentDir)) {
+        throw new Error(`El directorio padre ${parentDir} no existe. Verifique la ruta e inténtelo de nuevo.`);
+      }
+      
+      // Intentar crear un archivo temporal en el directorio padre para verificar permisos
+      const testFile = path.join(parentDir, '.rapidfast-write-test');
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
+    } catch (error: any) {
+      console.error(chalk.red('❌ Error de permisos:'));
+      console.error(chalk.red(`No tienes permisos de escritura en el directorio. Prueba ejecutar el comando como administrador o usar una ruta diferente.`));
+      throw error;
+    }
+
     // Crear directorio del proyecto
-    fs.ensureDirSync(projectPath);
+    try {
+      fs.ensureDirSync(targetDir);
+    } catch (error: any) {
+      if (error.code === 'EPERM') {
+        throw new Error(`No tienes permisos para crear el directorio ${targetDir}. Intenta ejecutar como administrador o usar una ruta diferente.`);
+      }
+      throw error;
+    }
 
     // Iniciar animación de carga con estilo mejorado
     const spinner = ora({
@@ -102,7 +144,7 @@ export async function createProject(
       progressBar.start(100, 0);
 
       // En un escenario real, copiaríamos de las plantillas incluidas.
-      createProjectStructure(projectPath, projectName, (progress) => {
+      createProjectStructure(targetDir, projectName, (progress) => {
         progressBar.update(progress);
       });
 
@@ -203,7 +245,7 @@ export async function createProject(
         if (isPackageManagerAvailable) {
           // Intentar instalar con permisos elevados si es necesario
           const success = await installDependencies(
-            projectPath,
+            targetDir,
             packageManager || "npm" // Asegurar que siempre sea string
           );
 
@@ -264,8 +306,19 @@ export async function createProject(
       console.error(error);
       throw error;
     }
-  } catch (error) {
-    console.error(chalk.red("Error al crear el proyecto:"), error);
+  } catch (error: any) {
+    console.error(chalk.red("Error al crear el proyecto:"), error.message);
+    if (error.code) {
+      console.error(chalk.dim(`Código de error: ${error.code}`));
+    }
+    
+    // Sugerir soluciones según el tipo de error
+    if (error.code === 'EPERM') {
+      console.log(chalk.yellow('\nSugerencia: Prueba alguna de estas soluciones:'));
+      console.log('1. Ejecuta el comando como administrador');
+      console.log('2. Especifica una ruta diferente con la opción --directory');
+      console.log(`3. Usa: rapidfast new mi-proyecto --directory "./mi-carpeta"`);
+    }
   }
 }
 
@@ -277,15 +330,11 @@ function createProjectStructure(
   projectName: string,
   onProgress: (progress: number) => void
 ): void {
-  // Crear estructura básica de directorios - eliminamos src/core
+  // Crear solo los directorios esenciales y que tendrán contenido
   const dirs = [
     "src",
     "src/app",
-    "src/app/api",
-    "src/config",
-    "src/controllers",
-    "src/services",
-    "src/middlewares",
+    "src/app/test", // Cambiado de "src/app/api" a "src/app/test"
   ];
 
   // Crear directorios (10% del progreso)
@@ -301,7 +350,7 @@ function createProjectStructure(
   };
 
   // Lista de archivos a crear
-  const baseFiles = [
+  const files = [
     { path: "package.json", content: createPackageJson(projectName) },
     { path: "tsconfig.json", content: createTsConfig() },
     { path: ".env", content: createEnvFile(projectName) },
@@ -311,12 +360,9 @@ function createProjectStructure(
     { path: "src/main.ts", content: createMainFile() },
     { path: "src/app/app.module.ts", content: createAppModule() },
     { path: "src/app/app.controller.ts", content: createAppController() },
-    { path: "src/app/api/api.module.ts", content: createApiModule() },
-    { path: "src/app/api/api.controller.ts", content: createApiController() },
+    { path: "src/app/test/test.module.ts", content: createTestModule() },       // Cambiado de api.module.ts
+    { path: "src/app/test/test.controller.ts", content: createTestController() }, // Cambiado de api.controller.ts
   ];
-
-  // Ya no incluimos archivos del core
-  const files = baseFiles;
 
   // Total de archivos para calcular progreso
   const totalFiles = files.length;
@@ -337,14 +383,14 @@ function createPackageJson(projectName: string): string {
     main: "dist/main.js",
     scripts: {
       start: "node dist/main.js",
-      dev: "nodemon --watch src --exec ts-node src/main.ts",
+      dev: "ts-node src/main.ts", // Cambiado de nodemon a ts-node directo
       build: "tsc",
       watch: "tsc -w",
       "rapidfast": "rapidfast",
-      "postinstall": "npm install --no-save nodemon ts-node typescript"
+      "serve": "rapidfast serve" // Nuevo script que usa nuestra implementación
     },
     dependencies: {
-      "@angelitosystems/rapidfast": "latest", // Agregamos como dependencia
+      "@angelitosystems/rapidfast": "latest",
       "dotenv": "^16.4.7",
       "express": "^4.21.2",
       "mongoose": "^8.12.1",
@@ -353,9 +399,9 @@ function createPackageJson(projectName: string): string {
     devDependencies: {
       "@types/express": "^5.0.0",
       "@types/node": "^22.13.10",
-      "nodemon": "^3.1.9",
       "ts-node": "^10.9.2",
       "typescript": "^5.8.2"
+      // Eliminado nodemon de las dependencias
     },
   };
 
@@ -430,29 +476,87 @@ coverage/
 }
 
 function createReadme(projectName: string): string {
+  // No intentar leer el README original del framework
+  // En su lugar, crear un README específico para el proyecto
   return `# ${projectName}
 
-Proyecto creado con RapidFAST Framework.
+![${projectName}](https://via.placeholder.com/700x150?text=${projectName})
 
-## Instalación
+## ⚡ Aplicación creada con RapidFAST Framework
+
+Este proyecto ha sido generado con [RapidFAST Framework](https://github.com/angelitosystems/rapidfast), un framework moderno para APIs RESTful con TypeScript y Express.
+
+## 🚀 Características
+
+- **Arquitectura Modular**: Estructura de código limpia y mantenible
+- **Decoradores TypeScript**: Define rutas y controladores de forma declarativa
+- **Inyección de Dependencias**: Sistema avanzado de DI incluido
+- **RapidWatch™**: Recarga automática durante desarrollo
+- **Swagger/OpenAPI**: Documentación automática de API
+
+## 📋 Requisitos
+
+- Node.js 14.0 o superior
+- TypeScript 4.0 o superior
+- npm, yarn o pnpm
+
+## 🔧 Instalación
 
 \`\`\`bash
+# Instalar dependencias
 npm install
 \`\`\`
 
-## Desarrollo
+## 🚀 Desarrollo
 
 \`\`\`bash
-npm run dev
+# Iniciar servidor de desarrollo con RapidWatch™
+npm run serve
+
+# O usando el CLI directamente
+rapidfast serve
 \`\`\`
 
-## Producción
+## 📁 Estructura del proyecto
+
+\`\`\`
+src/
+├── app/                    # Módulos de la aplicación
+│   ├── app.module.ts      # Módulo principal
+│   ├── app.controller.ts  # Controlador principal
+│   └── test/             # Módulo de prueba
+├── config/               # Configuraciones
+└── main.ts              # Punto de entrada
+\`\`\`
+
+## 🛠️ Scripts disponibles
+
+| Comando         | Descripción                               |
+|----------------|-------------------------------------------|
+| \`npm run serve\` | Inicia el servidor con recarga automática |
+| \`npm run build\` | Compila el proyecto para producción       |
+| \`npm start\`     | Ejecuta la versión compilada             |
+
+## ⚡ RapidWatch™
+
+Este proyecto incluye RapidWatch™, tecnología propietaria de RapidFAST para recarga automática durante desarrollo.
 
 \`\`\`bash
-npm run build
-npm start
+# Iniciar con RapidWatch™
+rapidfast serve
+
+# Configurar puerto y host
+rapidfast serve --port 4000 --host 0.0.0.0
 \`\`\`
-`;
+
+## 📄 Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT.
+
+---
+
+Creado con [RapidFAST Framework](https://github.com/angelitosystems/rapidfast)  
+Desarrollado por [Angelito Systems](https://github.com/angelitosystems)`;
 }
 
 function createMainFile(): string {
@@ -472,12 +576,12 @@ if (require.main === module) {
 
 function createAppModule(): string {
   return `import { Module } from "@angelitosystems/rapidfast";
-import { ApiModule } from "./api/api.module";
+import { TestModule } from "./test/test.module";
 import { AppController } from "./app.controller";
 
 @Module({
   controllers: [AppController],
-  imports: [ApiModule],
+  imports: [TestModule], 
 })
 export class AppModule {}
 `;
@@ -519,27 +623,46 @@ export class AppController {
 `;
 }
 
-function createApiModule(): string {
+// Función renombrada de createApiModule a createTestModule
+function createTestModule(): string {
   return `import { Module } from "@angelitosystems/rapidfast";
-import { ApiController } from "./api.controller";
+import { TestController } from "./test.controller";
 
 @Module({
-  controllers: [ApiController],
+  controllers: [TestController],
 })
-export class ApiModule {}
+export class TestModule {}
 `;
 }
 
-function createApiController(): string {
-  return `import { Controller, Get, ApiTags, ApiOperation } from "@angelitosystems/rapidfast";
+// Función renombrada de createApiController a createTestController
+function createTestController(): string {
+  return `import { Controller, Get, Post, ApiTags, ApiOperation, Req, Res } from "@angelitosystems/rapidfast";
+import { Request, Response } from "express";
 
-@ApiTags("API")
-@Controller("/api")
-export class ApiController {
-  @Get("/hello")
+@ApiTags("Test")
+@Controller("/test")
+export class TestController {
+  @Get()
   @ApiOperation({ summary: "Endpoint de prueba" })
+  test() {
+    return { message: "¡Test exitoso!" };
+  }
+  
+  @Get("/hello")
+  @ApiOperation({ summary: "Endpoint de saludo" })
   hello() {
-    return { message: "¡Hola desde la API!" };
+    return { message: "¡Hola desde el módulo de pruebas!" };
+  }
+  
+  @Post("/echo")
+  @ApiOperation({ summary: "Eco de datos enviados" })
+  echo(@Req() req: Request) {
+    return { 
+      message: "Eco de datos recibidos", 
+      data: req.body,
+      timestamp: new Date().toISOString()
+    };
   }
 }
 `;
@@ -570,14 +693,21 @@ async function installDependencies(
   packageManager: string
 ): Promise<boolean> {
   try {
-    const installCmd =
-      packageManager === "npm"
-        ? "npm install"
-        : packageManager === "yarn"
-        ? "yarn"
-        : "pnpm install";
+    // Asegurar que ts-node esté instalado correctamente
+    const essentialDeps = ['typescript@latest', 'ts-node@latest'];
+    const installCommand = packageManager === 'npm' 
+      ? `npm install --save-dev ${essentialDeps.join(' ')}` 
+      : packageManager === 'yarn'
+      ? `yarn add -D ${essentialDeps.join(' ')}`
+      : `pnpm add -D ${essentialDeps.join(' ')}`;
 
-    // Verificar si tenemos permisos de escritura en el directorio
+    const execOptions: ExecSyncOptions = {
+      cwd: projectPath,
+      stdio: 'inherit',
+      shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/sh'
+    };
+
+    // Verificar permisos de escritura
     try {
       const testFile = path.join(projectPath, ".write-test");
       fs.writeFileSync(testFile, "test");
@@ -589,18 +719,6 @@ async function installDependencies(
       return false;
     }
 
-    // Opciones para el proceso hijo
-    const options: ExecSyncOptions = {
-      cwd: projectPath,
-      stdio: "inherit",
-      timeout: 180000, // 3 minutos
-      shell: "cmd.exe", // En Windows usar cmd.exe, en otros sistemas usar /bin/sh
-    };
-
-    // En Windows, use 'cmd /c' para mejorar la compatibilidad
-    const cmdPrefix = process.platform === "win32" ? "cmd /c " : "";
-    const fullCmd = cmdPrefix + installCmd;
-
     const spinner = ora({
       text: chalk.blue(`Instalando dependencias con ${packageManager}...`),
       spinner: "dots",
@@ -608,7 +726,12 @@ async function installDependencies(
     }).start();
 
     try {
-      execSync(fullCmd, options);
+      // En Windows, usar cmd /c para mejorar compatibilidad
+      const command = process.platform === "win32" 
+        ? `cmd /c ${installCommand}`
+        : installCommand;
+
+      execSync(command, execOptions);
       spinner.succeed(chalk.green("Dependencias instaladas correctamente"));
       return true;
     } catch (error) {
