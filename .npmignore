@@ -1,0 +1,20 @@
+# Archivos de desarrollo que no deben ser publicados
+.github/
+.vscode/
+.idea/
+src/
+tests/
+docs/
+examples/
+.gitignore
+.env
+.env.example
+.eslintrc
+.prettierrc
+tsconfig.json
+jest.config.js
+*.log
+*.lock
+
+# Solo incluir la carpeta dist y archivos esenciales
+!dist/

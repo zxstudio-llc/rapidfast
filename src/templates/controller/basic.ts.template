@@ -1,0 +1,57 @@
+import { Controller, Get, Post, ApiTags, ApiOperation, Req, Res } from "rapidfast";
+import { Request, Response } from "express";
+
+@ApiTags("{{className}}")
+@Controller("/{{routeName}}")
+export class {{className}}Controller {
+  @Get()
+  @ApiOperation({ summary: "Obtener todos los elementos" })
+  async findAll(@Res() res: Response) {
+    try {
+      return res.status(200).json({
+        message: "Esta ruta devuelve todos los elementos"
+      });
+    } catch (error) {
+      console.error('Error en findAll:', error);
+      return res.status(500).json({
+        error: "Error interno del servidor",
+        message: "Ocurrió un error al obtener los elementos"
+      });
+    }
+  }
+
+  @Get("/:id")
+  @ApiOperation({ summary: "Obtener un elemento por ID" })
+  async findOne(@Req() req: Request, @Res() res: Response) {
+    try {
+      const id = req.params.id;
+      return res.status(200).json({
+        message: `Esta ruta devuelve el elemento con ID: ${id}`
+      });
+    } catch (error) {
+      console.error(`Error en findOne:`, error);
+      return res.status(500).json({
+        error: "Error interno del servidor",
+        message: "Ocurrió un error al obtener el elemento"
+      });
+    }
+  }
+
+  @Post()
+  @ApiOperation({ summary: "Crear un nuevo elemento" })
+  async create(@Req() req: Request, @Res() res: Response) {
+    try {
+      const body = req.body;
+      return res.status(201).json({
+        message: "Elemento creado exitosamente",
+        data: body
+      });
+    } catch (error) {
+      console.error('Error en create:', error);
+      return res.status(500).json({
+        error: "Error interno del servidor",
+        message: "Ocurrió un error al crear el elemento"
+      });
+    }
+  }
+}

@@ -1,0 +1,16 @@
+# Node.js
+node_modules/
+dist/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Variables de entorno
+.env
+
+# Otros
+.DS_Store
+coverage/
+.vscode/
+.idea/
+*.log
