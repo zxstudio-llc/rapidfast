@@ -277,13 +277,15 @@ function createProjectStructure(
   projectName: string,
   onProgress: (progress: number) => void
 ): void {
-  // Crear estructura básica de directorios
+  // Crear estructura básica de directorios - eliminamos src/core
   const dirs = [
     "src",
     "src/app",
     "src/app/api",
-    "src/core",
     "src/config",
+    "src/controllers",
+    "src/services",
+    "src/middlewares",
   ];
 
   // Crear directorios (10% del progreso)
@@ -313,9 +315,8 @@ function createProjectStructure(
     { path: "src/app/api/api.controller.ts", content: createApiController() },
   ];
 
-  // Agregar los archivos del núcleo del framework
-  const coreFiles = createCoreFiles();
-  const files = [...baseFiles, ...coreFiles];
+  // Ya no incluimos archivos del core
+  const files = baseFiles;
 
   // Total de archivos para calcular progreso
   const totalFiles = files.length;
@@ -343,11 +344,11 @@ function createPackageJson(projectName: string): string {
       "postinstall": "npm install --no-save nodemon ts-node typescript"
     },
     dependencies: {
-      dotenv: "^16.4.7",
-      express: "^4.21.2",
-      mongoose: "^8.12.1",
+      "@angelitosystems/rapidfast": "latest", // Agregamos como dependencia
+      "dotenv": "^16.4.7",
+      "express": "^4.21.2",
+      "mongoose": "^8.12.1",
       "reflect-metadata": "^0.2.2"
-      // Eliminamos la dependencia directa a rapidfast
     },
     devDependencies: {
       "@types/express": "^5.0.0",
@@ -456,7 +457,7 @@ npm start
 
 function createMainFile(): string {
   return `import "reflect-metadata";
-import { AppBootstrap } from "./core/application.bootstrap";
+import { AppBootstrap } from "@angelitosystems/rapidfast";
 import { AppModule } from "./app/app.module";
 
 // Punto de entrada de la aplicación
@@ -470,7 +471,7 @@ if (require.main === module) {
 }
 
 function createAppModule(): string {
-  return `import { Module } from "../core/decorators";
+  return `import { Module } from "@angelitosystems/rapidfast";
 import { ApiModule } from "./api/api.module";
 import { AppController } from "./app.controller";
 
@@ -484,7 +485,7 @@ export class AppModule {}
 
 function createAppController(): string {
   return `import { Response } from "express";
-import { ApiOperation, ApiResponse, ApiTags, Controller, Get, Res } from "../core/decorators";
+import { ApiOperation, ApiResponse, ApiTags, Controller, Get, Res } from "@angelitosystems/rapidfast";
 
 @ApiTags("Aplicación")
 @Controller()
@@ -519,7 +520,7 @@ export class AppController {
 }
 
 function createApiModule(): string {
-  return `import { Module } from "../../core/decorators";
+  return `import { Module } from "@angelitosystems/rapidfast";
 import { ApiController } from "./api.controller";
 
 @Module({
@@ -530,7 +531,7 @@ export class ApiModule {}
 }
 
 function createApiController(): string {
-  return `import { Controller, Get, ApiTags, ApiOperation } from "../../core/decorators";
+  return `import { Controller, Get, ApiTags, ApiOperation } from "@angelitosystems/rapidfast";
 
 @ApiTags("API")
 @Controller("/api")
@@ -542,489 +543,6 @@ export class ApiController {
   }
 }
 `;
-}
-
-// Nuevas funciones para crear los archivos del núcleo del framework
-function createCoreFiles(): { path: string; content: string }[] {
-  return [
-    {
-      path: "src/core/decorators.ts",
-      content: `import "reflect-metadata";
-import { Request, Response, NextFunction } from "express";
-
-// Decoradores de clase
-export function Controller(prefix: string = ""): ClassDecorator {
-  return (target: Function) => {
-    Reflect.defineMetadata("prefix", prefix, target);
-  };
-}
-
-export function ApiTags(tags: string | string[]): ClassDecorator {
-  return (target: Function) => {
-    Reflect.defineMetadata(
-      "apiTags",
-      Array.isArray(tags) ? tags : [tags],
-      target
-    );
-  };
-}
-
-export function Module(options: { controllers?: any[]; imports?: any[]; providers?: any[] }): ClassDecorator {
-  return (target: Function) => {
-    Reflect.defineMetadata("module", options, target);
-  };
-}
-
-// Decoradores de método
-export function Get(path: string = ""): MethodDecorator {
-  return (
-    target: Object,
-    propertyKey: string | symbol,
-    descriptor: PropertyDescriptor
-  ) => {
-    Reflect.defineMetadata("path", path, target, propertyKey);
-    Reflect.defineMetadata("method", "get", target, propertyKey);
-    return descriptor;
-  };
-}
-
-export function Post(path: string = ""): MethodDecorator {
-  return (
-    target: Object,
-    propertyKey: string | symbol,
-    descriptor: PropertyDescriptor
-  ) => {
-    Reflect.defineMetadata("path", path, target, propertyKey);
-    Reflect.defineMetadata("method", "post", target, propertyKey);
-    return descriptor;
-  };
-}
-
-export function Put(path: string = ""): MethodDecorator {
-  return (
-    target: Object,
-    propertyKey: string | symbol,
-    descriptor: PropertyDescriptor
-  ) => {
-    Reflect.defineMetadata("path", path, target, propertyKey);
-    Reflect.defineMetadata("method", "put", target, propertyKey);
-    return descriptor;
-  };
-}
-
-export function Delete(path: string = ""): MethodDecorator {
-  return (
-    target: Object,
-    propertyKey: string | symbol,
-    descriptor: PropertyDescriptor
-  ) => {
-    Reflect.defineMetadata("path", path, target, propertyKey);
-    Reflect.defineMetadata("method", "delete", target, propertyKey);
-    return descriptor;
-  };
-}
-
-export function Patch(path: string = ""): MethodDecorator {
-  return (
-    target: Object,
-    propertyKey: string | symbol,
-    descriptor: PropertyDescriptor
-  ) => {
-    Reflect.defineMetadata("path", path, target, propertyKey);
-    Reflect.defineMetadata("method", "patch", target, propertyKey);
-    return descriptor;
-  };
-}
-
-export function Options(path: string = ""): MethodDecorator {
-  return (
-    target: Object,
-    propertyKey: string | symbol,
-    descriptor: PropertyDescriptor
-  ) => {
-    Reflect.defineMetadata("path", path, target, propertyKey);
-    Reflect.defineMetadata("method", "options", target, propertyKey);
-    return descriptor;
-  };
-}
-
-export function All(path: string = ""): MethodDecorator {
-  return (
-    target: Object,
-    propertyKey: string | symbol,
-    descriptor: PropertyDescriptor
-  ) => {
-    Reflect.defineMetadata("path", path, target, propertyKey);
-    Reflect.defineMetadata("method", "all", target, propertyKey);
-    return descriptor;
-  };
-}
-
-export function ApiOperation(options: {
-  summary?: string;
-  description?: string;
-}): MethodDecorator {
-  return (
-    target: Object,
-    propertyKey: string | symbol,
-    descriptor: PropertyDescriptor
-  ) => {
-    Reflect.defineMetadata("apiOperation", options, target, propertyKey);
-    return descriptor;
-  };
-}
-
-export function ApiResponse(options: {
-  status: number;
-  description?: string;
-  schema?: any;
-}): MethodDecorator {
-  return (
-    target: Object,
-    propertyKey: string | symbol,
-    descriptor: PropertyDescriptor
-  ) => {
-    const responses =
-      Reflect.getMetadata("apiResponses", target, propertyKey) || [];
-    responses.push(options);
-    Reflect.defineMetadata("apiResponses", responses, target, propertyKey);
-    return descriptor;
-  };
-}
-
-// Decoradores de parámetros
-export function Req() {
-  return function (
-    target: Object,
-    propertyKey: string | symbol,
-    parameterIndex: number
-  ): void {
-    const params = Reflect.getMetadata("params", target, propertyKey) || [];
-    params.push({ index: parameterIndex, type: "request" });
-    Reflect.defineMetadata("params", params, target, propertyKey);
-  };
-}
-
-export function Res() {
-  return function (
-    target: Object,
-    propertyKey: string | symbol,
-    parameterIndex: number
-  ): void {
-    const params = Reflect.getMetadata("params", target, propertyKey) || [];
-    params.push({ index: parameterIndex, type: "response" });
-    Reflect.defineMetadata("params", params, target, propertyKey);
-  };
-}
-
-export function Next() {
-  return function (
-    target: Object,
-    propertyKey: string | symbol,
-    parameterIndex: number
-  ): void {
-    const params = Reflect.getMetadata("params", target, propertyKey) || [];
-    params.push({ index: parameterIndex, type: "next" });
-    Reflect.defineMetadata("params", params, target, propertyKey);
-  };
-}
-
-export function Injectable(): ClassDecorator {
-  return (target: Function) => {
-    Reflect.defineMetadata("injectable", true, target);
-  };
-}
-`
-    },
-    {
-      path: "src/core/application.ts",
-      content: `import express, { Express, Request, Response, NextFunction } from "express";
-import { RouterManager } from "./router-manager";
-
-export class Application {
-  private app: Express;
-  private routerManager: RouterManager;
-
-  constructor() {
-    this.app = express();
-    this.app.use(express.json());
-    this.routerManager = new RouterManager();
-    
-    // Configurar middleware básicos
-    this.setupMiddleware();
-  }
-  
-  // Método para configurar middleware comunes
-  private setupMiddleware(): void {
-    // Middleware para parsear JSON
-    this.app.use(express.json());
-    
-    // Middleware para habilitar CORS básico - corregido
-    this.app.use((req: Request, res: Response, next: NextFunction) => {
-      res.header('Access-Control-Allow-Origin', '*');
-      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-      if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
-      }
-      next();
-    });
-  }
-
-  registerControllers(controllers: any[]) {
-    controllers.forEach((controller) => {
-      this.routerManager.registerController(controller);
-    });
-    this.app.use(this.routerManager.getRouter());
-    
-    // Registrar middleware para rutas no encontradas después de todas las rutas
-    this.setupErrorHandlers();
-  }
-  
-  // Método para configurar los manejadores de error
-  private setupErrorHandlers(): void {
-    // Middleware para manejar rutas no encontradas (404)
-    this.app.use((req: Request, res: Response) => {
-      res.status(404).json({
-        status: 404,
-        error: "Not Found",
-        message: \`Ruta no encontrada: \${req.method} \${req.url}\`,
-        timestamp: new Date().toISOString(),
-        path: req.originalUrl,
-        suggestedRoutes: ["/", "/health", "/api/hello"] // Rutas comunes que podrían ser útiles
-      });
-    });
-    
-    // Middleware para manejar errores generales (500)
-    this.app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-      console.error('Error interno del servidor:', err);
-      
-      const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
-      
-      res.status(statusCode).json({
-        status: statusCode,
-        error: err.name || "Error Interno",
-        message: err.message || "Ha ocurrido un error interno en el servidor",
-        timestamp: new Date().toISOString(),
-        path: req.originalUrl
-      });
-    });
-  }
-
-  listen(port: number, callback?: () => void) {
-    this.app.listen(port, callback);
-  }
-  
-  // Método para acceder a la aplicación Express directamente para configuración avanzada
-  getExpressApp(): Express {
-    return this.app;
-  }
-}`
-    },
-    {
-      path: "src/core/router-manager.ts",
-      content: `import "reflect-metadata";
-import {
-  Router,
-  Request,
-  Response,
-  NextFunction,
-} from "express";
-
-export class RouterManager {
-  private router: Router;
-
-  constructor() {
-    this.router = Router();
-  }
-
-  registerController(Controller: new (...args: any[]) => any) {
-    const instance = new Controller();
-    const prefix = Reflect.getMetadata("prefix", Controller) || "";
-
-    const methodKeys = Object.getOwnPropertyNames(Controller.prototype).filter(
-      (key) => key !== "constructor"
-    );
-
-    methodKeys.forEach((key) => {
-      const path = Reflect.getMetadata("path", instance, key) || "";
-      const method = Reflect.getMetadata("method", instance, key) as keyof Pick<
-        Router,
-        "get" | "post" | "put" | "delete" | "patch" | "options" | "all"
-      >;
-
-      if (method && this.router[method]) {
-        const fullPath = \`\${prefix}\${path}\`;
-
-        // Crear un middleware que maneje los parámetros decorados
-        const handler = (req: Request, res: Response, next: NextFunction) => {
-          try {
-            const params = Reflect.getMetadata("params", instance, key) || [];
-            const methodParams: any[] = [];
-
-            // Preparar los argumentos según los decoradores de parámetros
-            params.forEach((param: { index: number; type: string }) => {
-              switch (param.type) {
-                case "request":
-                  methodParams[param.index] = req;
-                  break;
-                case "response":
-                  methodParams[param.index] = res;
-                  break;
-                case "next":
-                  methodParams[param.index] = next;
-                  break;
-                // Se pueden añadir más casos según sea necesario
-              }
-            });
-
-            // Si no hay parámetros decorados, asumimos que es un controlador simple
-            const result = params.length
-              ? instance[key].apply(instance, methodParams)
-              : instance[key].call(instance, req, res, next);
-
-            // Si el método devuelve una promesa o un resultado y no tiene @Res(), manejamos la respuesta
-            if (
-              result !== undefined &&
-              !params.some((p: { type: string }) => p.type === "response")
-            ) {
-              if (result instanceof Promise) {
-                result
-                  .then((data) => {
-                    if (!res.headersSent) {
-                      res.json(data);
-                    }
-                  })
-                  .catch((err) => {
-                    console.error('Error en controlador:', err);
-                    if (!res.headersSent) {
-                      res.status(500).json({
-                        error: 'Error interno del servidor',
-                        message: process.env.NODE_ENV === 'development' ? err.message : undefined
-                      });
-                    }
-                    next(err);
-                  });
-              } else {
-                if (!res.headersSent) {
-                  res.json(result);
-                }
-              }
-            }
-          } catch (error) {
-            next(error);
-          }
-        };
-
-        this.router[method](fullPath, handler);
-        console.log(\`Ruta registrada: [\${method.toUpperCase()}] \${fullPath}\`);
-      }
-    });
-  }
-
-  getRouter(): Router {
-    return this.router;
-  }
-}`
-    },
-    {
-      path: "src/core/application.bootstrap.ts",
-      content: `import "reflect-metadata";
-import { Application } from "./application";
-import dotenv from "dotenv";
-import path from 'path';
-import fs from 'fs';
-
-// Cargar variables de entorno
-const envPath = path.resolve(process.cwd(), '.env');
-if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath });
-} else {
-  dotenv.config();
-}
-
-/**
- * Clase principal para la inicialización y configuración de la aplicación
- */
-export class AppBootstrap {
-  private app: Application;
-  private port: number;
-
-  /**
-   * Constructor que inicializa la aplicación
-   * @param appModule - Módulo principal de la aplicación
-   * @param customPort - Puerto opcional para el servidor (default: desde variables de entorno)
-   */
-  constructor(appModule: any, customPort?: number) {
-    this.app = new Application();
-    this.port = customPort || parseInt(process.env.PORT || '3000', 10);
-
-    // Registramos los módulos y sus controladores utilizando la clase del módulo
-    this.registerModule(appModule);
-  }
-
-  /**
-   * Registra un módulo y sus imports recursivamente
-   * @param moduleClass - Clase del módulo a registrar
-   */
-  private registerModule(moduleClass: any): void {
-    const metadata = Reflect.getMetadata("module", moduleClass) || {};
-
-    // Registrar controladores del módulo
-    if (metadata.controllers) {
-      this.app.registerControllers(metadata.controllers);
-    }
-
-    // Registrar módulos importados recursivamente
-    if (metadata.imports) {
-      metadata.imports.forEach((importedModule: any) => {
-        this.registerModule(importedModule);
-      });
-    }
-  }
-
-  /**
-   * Inicia el servidor en el puerto configurado
-   * @param callback - Función opcional a ejecutar después de iniciar el servidor
-   */
-  async start(callback?: () => void): Promise<void> {
-    try {
-      this.app.listen(this.port, () => {
-        console.log(\`⚡ Servidor corriendo en http://localhost:\${this.port}\`);
-        
-        // Ejecutar callback si existe
-        if (callback) {
-          callback();
-        }
-      });
-    } catch (error) {
-      console.error('❌ Error al iniciar la aplicación:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Método estático para iniciar la aplicación con una configuración simple
-   * @param appModule - Módulo principal de la aplicación
-   * @param port - Puerto opcional para el servidor
-   */
-  static async bootstrap(appModule: any, port?: number): Promise<AppBootstrap> {
-    const app = new AppBootstrap(appModule, port);
-    await app.start();
-    return app;
-  }
-  
-  /**
-   * Expone la instancia de Application para configuraciones avanzadas
-   */
-  getApp(): Application {
-    return this.app;
-  }
-}
-`
-    }
-  ];
 }
 
 /**

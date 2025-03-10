@@ -1,21 +1,34 @@
 import "reflect-metadata";
-import {
-  Router,
-  Request,
-  Response,
-  NextFunction,
-} from "express";
+import { Router, Request, Response, NextFunction } from "express";
+import { DependencyInjector } from "./dependency-injector";
+import { MiddlewareManager } from "./middleware-manager";
 
 export class RouterManager {
   private router: Router;
+  private dependencyInjector: DependencyInjector;
+  private middlewareManager: MiddlewareManager;
 
-  constructor() {
+  constructor(
+    dependencyInjector: DependencyInjector,
+    middlewareManager: MiddlewareManager
+  ) {
     this.router = Router();
+    this.dependencyInjector = dependencyInjector;
+    this.middlewareManager = middlewareManager;
   }
 
   registerController(Controller: new (...args: any[]) => any) {
-    const instance = new Controller();
+    // Crear una instancia del controlador usando el inyector de dependencias
+    const instance = this.dependencyInjector.instantiate(Controller);
     const prefix = Reflect.getMetadata("prefix", Controller) || "";
+
+    // Comprobar si hay middlewares a nivel de controlador
+    const classMiddlewares =
+      Reflect.getMetadata("middlewares", Controller) || [];
+    const classMiddlewareHandlers =
+      classMiddlewares.length > 0
+        ? this.middlewareManager.getMiddlewareHandlers(classMiddlewares)
+        : [];
 
     const methodKeys = Object.getOwnPropertyNames(Controller.prototype).filter(
       (key) => key !== "constructor"
@@ -30,6 +43,20 @@ export class RouterManager {
 
       if (method && this.router[method]) {
         const fullPath = `${prefix}${path}`;
+
+        // Obtener middlewares específicos para este método
+        const methodMiddlewares =
+          Reflect.getMetadata("middlewares", instance, key) || [];
+        const methodMiddlewareHandlers =
+          methodMiddlewares.length > 0
+            ? this.middlewareManager.getMiddlewareHandlers(methodMiddlewares)
+            : [];
+
+        // Combinar middlewares de clase y método
+        const combinedMiddlewares = [
+          ...classMiddlewareHandlers,
+          ...methodMiddlewareHandlers,
+        ];
 
         // Crear un middleware que maneje los parámetros decorados
         const handler = (req: Request, res: Response, next: NextFunction) => {
@@ -71,11 +98,14 @@ export class RouterManager {
                     }
                   })
                   .catch((err) => {
-                    console.error('Error en controlador:', err);
+                    console.error("Error en controlador:", err);
                     if (!res.headersSent) {
                       res.status(500).json({
-                        error: 'Error interno del servidor',
-                        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+                        error: "Error interno del servidor",
+                        message:
+                          process.env.NODE_ENV === "development"
+                            ? err.message
+                            : undefined,
                       });
                     }
                     next(err);
@@ -91,8 +121,18 @@ export class RouterManager {
           }
         };
 
-        this.router[method](fullPath, handler);
-        console.log(`Ruta registrada: [${method.toUpperCase()}] ${fullPath}`);
+        // Registrar la ruta con sus middlewares
+        if (combinedMiddlewares.length > 0) {
+          this.router[method](fullPath, ...combinedMiddlewares, handler);
+          console.log(
+            `Ruta registrada: [${method.toUpperCase()}] ${fullPath} (con ${
+              combinedMiddlewares.length
+            } middlewares)`
+          );
+        } else {
+          this.router[method](fullPath, handler);
+          console.log(`Ruta registrada: [${method.toUpperCase()}] ${fullPath}`);
+        }
       }
     });
   }

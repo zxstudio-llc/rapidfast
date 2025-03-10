@@ -1,6 +1,6 @@
 # RapidFAST Framework
 
-[![npm version](https://img.shields.io/npm/v/@angelito-systems/rapidfast.svg)](https://www.npmjs.com/package/@angelito-systems/rapidfast)
+[![npm version](https://img.shields.io/npm/v/@angelitosystems/rapidfast.svg)](https://www.npmjs.com/package/@angelitosystems/rapidfast)
 [![GitHub Package](https://img.shields.io/badge/GitHub%20Package-1.0.2-blue)](https://github.com/Angelito-Systems/rapidfast/packages)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -10,16 +10,11 @@ Un framework moderno para el desarrollo de APIs RESTful con TypeScript y Express
 
 ### Opción 1: Desde npm (recomendado)
 ```bash
-npm install @angelito-systems/rapidfast
+npm install @angelitosystems/rapidfast
 ```
 
-### Opción 2: Desde GitHub Packages
-```bash
-# Crea o edita tu archivo .npmrc en tu proyecto o global
-echo "@angelito-systems:registry=https://npm.pkg.github.com" >> .npmrc
-
 # Instala el paquete
-npm install @angelito-systems/rapidfast
+npm install @angelitosystems/rapidfast
 ```
 
 ## Inicio Rápido
@@ -27,7 +22,7 @@ npm install @angelito-systems/rapidfast
 ### Crear un nuevo proyecto
 
 ```bash
-npx @angelito-systems/rapidfast new mi-proyecto
+npx @angelitosystems/rapidfast new mi-proyecto
 cd mi-proyecto
 npm run dev
 ```
@@ -35,7 +30,7 @@ npm run dev
 ### Uso básico
 
 ```typescript
-import { Controller, Get, Post, AppBootstrap, Module } from '@angelito-systems/rapidfast';
+import { Controller, Get, Post, AppBootstrap, Module } from '@angelitosystems/rapidfast';
 
 @Controller('/api')
 class ApiController {

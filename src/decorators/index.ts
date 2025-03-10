@@ -24,6 +24,13 @@ export function Module(options: { controllers?: any[]; imports?: any[]; provider
   };
 }
 
+// Decorador para middlewares
+export function Middleware(): ClassDecorator {
+  return (target: Function) => {
+    Reflect.defineMetadata("middleware", true, target);
+  };
+}
+
 // Decoradores de método
 export function Get(path: string = ""): MethodDecorator {
   return (
@@ -181,5 +188,37 @@ export function Next() {
 export function Injectable(): ClassDecorator {
   return (target: Function) => {
     Reflect.defineMetadata("injectable", true, target);
+  };
+}
+
+// Decoradores de parámetro para inyección de dependencias
+export function Inject(token?: string | symbol | Function): ParameterDecorator {
+  return (target: Object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
+    // Si estamos decorando un parámetro de constructor (para inyección de dependencias)
+    if (propertyKey === undefined) {
+      const injectionTokens = Reflect.getOwnMetadata("design:paramtypes", target) || [];
+      const injectionToken = token || injectionTokens[parameterIndex];
+      
+      const injectParams = Reflect.getMetadata("inject:params", target) || [];
+      injectParams.push({ index: parameterIndex, token: injectionToken });
+      Reflect.defineMetadata("inject:params", injectParams, target);
+    }
+  };
+}
+
+// Decorador para usar middlewares en controladores o métodos específicos
+export function UseMiddlewares(...middlewares: Function[]): ClassDecorator & MethodDecorator {
+  return (target: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor) => {
+    if (propertyKey && descriptor) {
+      // Aplicado a un método
+      const existingMiddlewares = Reflect.getMetadata("middlewares", target, propertyKey) || [];
+      Reflect.defineMetadata("middlewares", [...existingMiddlewares, ...middlewares], target, propertyKey);
+      return descriptor;
+    } else {
+      // Aplicado a una clase
+      const existingMiddlewares = Reflect.getMetadata("middlewares", target) || [];
+      Reflect.defineMetadata("middlewares", [...existingMiddlewares, ...middlewares], target);
+      return target;
+    }
   };
 }

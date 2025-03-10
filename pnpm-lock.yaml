@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@angelitosystems/rapidfast':
+        specifier: ^1.0.3
+        version: 1.0.3
       boxen:
         specifier: ^5.1.2
         version: 5.1.2
@@ -98,6 +101,10 @@ importers:
         version: 5.8.2
 
 packages:
+
+  '@angelitosystems/rapidfast@1.0.3':
+    resolution: {integrity: sha512-dwCNPuhpRRMfFJn8GOgeYnhEgf2Tr9KZlFlgZaYvNl7kkr2R+u3iiGo9fPBbTtVEIOMyfLBsuKqTE6xK/KVZRw==}
+    hasBin: true
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -1445,6 +1452,30 @@ packages:
     engines: {node: '>=10'}
 
 snapshots:
+
+  '@angelitosystems/rapidfast@1.0.3':
+    dependencies:
+      boxen: 5.1.2
+      chalk: 4.1.2
+      cli-progress: 3.12.0
+      commander: 9.5.0
+      dotenv: 16.4.7
+      express: 4.21.2
+      figlet: 1.8.0
+      fs-extra: 11.3.0
+      gradient-string: 2.0.2
+      inquirer: 8.2.6
+      log-symbols: 4.1.0
+      mongoose: 7.8.6
+      ora: 5.4.1
+      reflect-metadata: 0.1.14
+    transitivePeerDependencies:
+      - '@aws-sdk/credential-providers'
+      - '@mongodb-js/zstd'
+      - kerberos
+      - mongodb-client-encryption
+      - snappy
+      - supports-color
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:

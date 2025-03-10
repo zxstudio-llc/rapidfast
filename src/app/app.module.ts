@@ -1,4 +1,4 @@
-import { Module } from "../decorators";
+import { Module } from "@angelitosystems/rapidfast";
 import { AppController } from "./app.controller";
 import { ApiModule } from "./api/api.module";
 

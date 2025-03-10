@@ -73,12 +73,10 @@ program
       const packageData = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
       
       // Verificar estructura mínima de directorios y archivos
-      const criticalDirs = ['src', 'src/app', 'src/core'];
+      const criticalDirs = ['src', 'src/app'];
       const criticalFiles = [
         'src/main.ts',
-        'src/app/app.module.ts',
-        'src/core/decorators.ts',
-        'src/core/application.bootstrap.ts'
+        'src/app/app.module.ts'
       ];
       
       const missingDirs = criticalDirs.filter(dir => !fs.existsSync(path.join(cwd, dir)));

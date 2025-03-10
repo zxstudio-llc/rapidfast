@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { ApiOperation, ApiResponse, ApiTags, Controller, Get, Res } from "../decorators";
+import { ApiOperation, ApiResponse, ApiTags, Controller, Get, Res } from "@angelitosystems/rapidfast";
 import { environment } from "../config/environment";
 import { db } from "../config/database";
 

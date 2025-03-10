@@ -1,14 +1,20 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import { RouterManager } from "./router-manager";
+import { MiddlewareManager } from "./middleware-manager";
+import { DependencyInjector } from "./dependency-injector";
 
 export class Application {
   private app: Express;
   private routerManager: RouterManager;
+  private middlewareManager: MiddlewareManager;
+  private dependencyInjector: DependencyInjector;
 
   constructor() {
     this.app = express();
     this.app.use(express.json());
-    this.routerManager = new RouterManager();
+    this.middlewareManager = new MiddlewareManager(this.app);
+    this.dependencyInjector = new DependencyInjector();
+    this.routerManager = new RouterManager(this.dependencyInjector, this.middlewareManager);
     
     // Configurar middleware básicos
     this.setupMiddleware();
@@ -40,6 +46,22 @@ export class Application {
     
     // Registrar middleware para rutas no encontradas después de todas las rutas
     this.setupErrorHandlers();
+  }
+  
+  /**
+   * Registra middlewares globales
+   */
+  useGlobalMiddlewares(middlewares: Function[]): void {
+    this.middlewareManager.applyGlobalMiddlewares(middlewares);
+  }
+  
+  /**
+   * Registra proveedores de servicios globales
+   */
+  registerProviders(providers: any[]): void {
+    providers.forEach(provider => {
+      this.dependencyInjector.registerProvider(provider);
+    });
   }
   
   // Nuevo método para configurar los manejadores de error
