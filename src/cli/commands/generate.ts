@@ -27,18 +27,23 @@ export async function generateResource(options: GenerateOptions): Promise<void> 
     
     // Determinar directorio base y crear si no existe
     const baseDir = directory || process.cwd();
-    
+
+    // Se crea subdirectorio por defecto dentro de app
+    const appDir = path.join(baseDir, 'app', camelName);
+
     // Ya no creamos subdirectorios específicos por tipo
-    let targetDir = baseDir;
-    
+    // let targetDir = baseDir;
+
     // Solo creamos un subdirectorio para recursos/módulos si NO se especificó un directorio
     // Esta es la modificación clave para evitar anidación innecesaria
-    if ((type === 'resource' || type === 'module') && !directory) {
-      targetDir = path.join(baseDir, camelName);
-    }
+    // if ((type === 'resource' || type === 'module') && !directory) {
+    //   targetDir = path.join(baseDir, camelName);
+    // }
     
     // Asegurar que toda la estructura de directorios exista
-    await fs.ensureDir(targetDir);
+    await fs.ensureDir(appDir);
+
+    // await fs.ensureDir(targetDir);
     
     // Generar archivos según el tipo
     const spinner = ora(`Generando ${type} ${chalk.cyan(pascalName)}...`).start();
@@ -46,43 +51,43 @@ export async function generateResource(options: GenerateOptions): Promise<void> 
     try {
       if (type === 'resource') {
         // Generar un recurso completo (módulo + controlador + servicio) en el mismo directorio
-        await generateModule({ name, directory: targetDir });
-        await generateController({ name, directory: targetDir, crud });
-        await generateService({ name, directory: targetDir });
+        await generateModule({ name, directory: appDir });
+        await generateController({ name, directory: appDir, crud });
+        await generateService({ name, directory: appDir });
         
         // Registrar el módulo en el app.module.ts si existe
-        await registerModuleInAppModule(name, targetDir);
+        await registerModuleInAppModule(name, appDir);
         
-        spinner.succeed(chalk.green(`Recurso ${pascalName} generado con éxito en ${targetDir}`));
+        spinner.succeed(chalk.green(`Recurso ${pascalName} generado con éxito en ${appDir}`));
         
         console.log(chalk.gray('Archivos generados:'));
-        console.log(chalk.cyan(`  - ${path.join(targetDir, `${camelName}.module.ts`)}`));
-        console.log(chalk.cyan(`  - ${path.join(targetDir, `${camelName}.controller.ts`)}`));
-        console.log(chalk.cyan(`  - ${path.join(targetDir, `${camelName}.service.ts`)}`));
+        console.log(chalk.cyan(`  - ${path.join(appDir, `${camelName}.module.ts`)}`));
+        console.log(chalk.cyan(`  - ${path.join(appDir, `${camelName}.controller.ts`)}`));
+        console.log(chalk.cyan(`  - ${path.join(appDir, `${camelName}.service.ts`)}`));
       } else {
         // Generar el recurso individual en el directorio actual o especificado
         switch(type) {
           case 'controller':
-            await generateController({ name, directory: targetDir, crud });
+            await generateController({ name, directory: appDir, crud });
             break;
           case 'service':
-            await generateService({ name, directory: targetDir });
+            await generateService({ name, directory: appDir });
             break;
           case 'middleware':
-            await generateMiddleware({ name, directory: targetDir });
+            await generateMiddleware({ name, directory: appDir });
             break;
           case 'module':
-            await generateModule({ name, directory: targetDir });
+            await generateModule({ name, directory: appDir });
             // Registrar el módulo en el app.module.ts si existe
-            await registerModuleInAppModule(name, targetDir);
+            await registerModuleInAppModule(name, appDir);
             break;
         }
         
-        spinner.succeed(chalk.green(`${pascalName}${capitalize(type)} generado con éxito en ${targetDir}`));
+        spinner.succeed(chalk.green(`${pascalName}${capitalize(type)} generado con éxito en ${appDir}`));
         
         // Mostrar ruta del archivo generado
         console.log(chalk.gray('Archivo generado:'));
-        console.log(chalk.cyan(`  - ${path.join(targetDir, `${camelName}.${type}.ts`)}`));
+        console.log(chalk.cyan(`  - ${path.join(appDir, `${camelName}.${type}.ts`)}`));
       }
       
       // Sugerir próximos pasos

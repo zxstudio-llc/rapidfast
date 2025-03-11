@@ -21,7 +21,8 @@
     "publish:all:github": "npm run publish:npm && npm run publish:github",
     "bump": "node scripts/bump-version.js",
     "bump:minor": "node scripts/bump-version.js minor",
-    "bump:major": "node scripts/bump-version.js major"
+    "bump:major": "node scripts/bump-version.js major",
+    "test-generate-resource": "ts-node tests/testGenerateResource.ts"
   },
   "keywords": [
     "framework",
@@ -60,9 +61,7 @@
     "log-symbols": "^4.1.0",
     "mongoose": "^7.5.0",
     "ora": "^5.4.1",
-    "reflect-metadata": "^0.1.13",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.2.2"
+    "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
     "@types/boxen": "^3.0.1",
@@ -77,8 +76,8 @@
     "@typescript-eslint/parser": "^6.4.1",
     "eslint": "^8.47.0",
     "rimraf": "^5.0.1",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.2.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
   },
   "files": [
     "dist/**/*",
