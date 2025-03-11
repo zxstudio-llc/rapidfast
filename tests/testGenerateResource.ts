@@ -1,4 +1,4 @@
-import { generateResource } from '../src/cli/commands/generate';  // Ajusta el path según la ubicación de tu función
+import { generateResource } from '../src/cli/commands/generate';
 import fs from 'fs';
 import path from 'path';
 
