@@ -9,6 +9,7 @@ import gradient from "gradient-string";
 import * as path from "path";
 import * as fs from "fs-extra";
 import { serveApplication } from "./cli/commands/serve";
+import { createOrmCommand } from './cli/commands/orm';
 
 // Lista de tipos válidos para generar
 const validTypes = [
@@ -16,6 +17,8 @@ const validTypes = [
   "service",
   "middleware",
   "module",
+  "model",
+  "dto",
   "resource",
 ];
 
@@ -52,22 +55,26 @@ if (!isServeCommand) {
 // Comando para crear un nuevo proyecto
 program
   .command("new")
-  .argument("<name>", "Nombre del proyecto a crear")
-  .alias("create")
+  .alias("n")
   .description("Crea un nuevo proyecto con RapidFAST Framework")
+  .argument("<n>", "Nombre del proyecto a crear")
   .option("-d, --directory <dir>", "Directorio donde crear el proyecto")
   .option("--skip-install", "Omitir instalación de dependencias")
   .option(
     "-p, --package-manager <manager>",
     "Gestor de paquetes a utilizar (npm, yarn, pnpm)"
   )
+  .option("-t, --template <template>", "Plantilla a utilizar (default, auth, mongodb, typeorm)")
+  .option("-f, --force", "Sobrescribir el directorio si existe")
   .addHelpText('after', `
 Ejemplos:
-  rapidfast new mi-proyecto             # Crea en la carpeta actual/mi-proyecto
-  rapidfast new app -d ./proyectos      # Crea en ./proyectos/app
-  rapidfast new api --directory C:/apps  # Crea en C:/apps/api
+  rapidfast new mi-proyecto                    # Crea un nuevo proyecto básico
+  rapidfast new api -t auth                    # Crea un proyecto con autenticación
+  rapidfast new app -t mongodb                 # Crea un proyecto con MongoDB
+  rapidfast new api -d ./proyectos --force     # Crea en ./proyectos/api, sobrescribe si existe
+  rapidfast new app --package-manager pnpm     # Usa pnpm como gestor de paquetes
   `)
-  .action((name, options) => {
+  .action(async (name, options) => {
     if (!name) {
       console.error(chalk.red('Error: Se requiere especificar un nombre para el proyecto'));
       process.exit(1);
@@ -80,14 +87,22 @@ Ejemplos:
       process.exit(1);
     }
     
-    createProject(name, {
-      directory: options.directory,
-      skipInstall: options.skipInstall,
-      packageManager: options.packageManager
-    }).catch(err => {
-      console.error(chalk.red('Error al crear el proyecto:'), err);
+    try {
+      await createProject(name, {
+        directory: options.directory,
+        skipInstall: options.skipInstall,
+        packageManager: options.packageManager,
+        template: options.template,
+        force: options.force
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('❌ Error:', error.message);
+      } else {
+        console.error('❌ Error desconocido durante la creación del proyecto');
+      }
       process.exit(1);
-    });
+    }
   });
 
 // Comando para iniciar el servidor de desarrollo
@@ -125,12 +140,13 @@ program
   .description("Genera un nuevo recurso (controlador, servicio, etc.)")
   .argument(
     "<type>",
-    "Tipo de recurso (controller, service, middleware, module, resource)"
+    "Tipo de recurso (controller, service, middleware, module, model, dto, resource)"
   )
-  .argument("<name>", "Nombre del recurso (en kebab-case o camelCase)")
+  .argument("<n>", "Nombre del recurso (en kebab-case o camelCase)")
   .option("-d, --directory <dir>", "Directorio donde crear el recurso")
   .option("--crud", "Genera con operaciones CRUD completas")
-  .option("-r, --resource", "Genera un recurso completo (controlador, servicio y módulo)")
+  .option("-r, --resource", "Genera un recurso completo (controlador, servicio, modelo, dto y módulo)")
+  .option("-t, --template <template>", "Plantilla a utilizar", "default")
   .action((type, name, options) => {
     if (!validTypes.includes(type)) {
       console.error(chalk.red(`Error: Tipo "${type}" no válido.`));
@@ -157,20 +173,22 @@ program
       type: type as any,
       directory,
       crud: options.crud,
+      template: options.template
     });
   });
 
 // Crear alias para los comandos de generación
 validTypes.forEach((type) => {
   const command = program
-    .command(`g:${type} <name>`)
+    .command(`g:${type} <n>`)
     .alias(`generate:${type}`)
     .description(`Genera un nuevo ${type}`)
-    .option("-d, --directory <dir>", "Directorio donde crear el recurso");
+    .option("-d, --directory <dir>", "Directorio donde crear el recurso")
+    .option("-t, --template <template>", "Plantilla a utilizar", "default");
 
   if (type === "controller" || type === "resource") {
     command.option("--crud", "Genera con operaciones CRUD completas");
-    command.option("-r, --resource", "Genera un recurso completo (controlador, servicio y módulo)");
+    command.option("-r, --resource", "Genera un recurso completo (controlador, servicio, modelo, dto y módulo)");
   }
 
   command.action((name, options) => {
@@ -194,6 +212,7 @@ validTypes.forEach((type) => {
       type: actualType as any,
       directory,
       crud: options.crud,
+      template: options.template
     });
   });
 });

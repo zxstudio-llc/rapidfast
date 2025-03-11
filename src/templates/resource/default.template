@@ -1,0 +1,11 @@
+import { Module } from "@angelitosystems/rapidfast";
+import { {{PascalCase}}Controller } from "./{{kebabCase}}.controller";
+import { {{PascalCase}}Service } from "./{{kebabCase}}.service";
+import { {{PascalCase}}Model } from "./{{kebabCase}}.model";
+
+@Module({
+  controllers: [{{PascalCase}}Controller],
+  providers: [{{PascalCase}}Service],
+  models: [{{PascalCase}}Model]
+})
+export class {{PascalCase}}Module {} 

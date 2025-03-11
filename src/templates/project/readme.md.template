@@ -1,0 +1,79 @@
+# {{projectName}}
+
+![{{projectName}}](https://via.placeholder.com/700x150?text={{projectName}})
+
+## ⚡ Aplicación creada con RapidFAST Framework
+
+Este proyecto ha sido generado con [RapidFAST Framework](https://github.com/angelitosystems/rapidfast), un framework moderno para APIs RESTful con TypeScript y Express.
+
+## 🚀 Características
+
+- **Arquitectura Modular**: Estructura de código limpia y mantenible
+- **Decoradores TypeScript**: Define rutas y controladores de forma declarativa
+- **Inyección de Dependencias**: Sistema avanzado de DI incluido
+- **RapidWatch™**: Recarga automática durante desarrollo
+- **Documentación API**: Documentación automática de endpoints
+
+## 📋 Requisitos
+
+- Node.js 14.0 o superior
+- TypeScript 4.0 o superior
+- npm, yarn o pnpm
+
+## 🔧 Instalación
+
+```bash
+# Instalar dependencias
+npm install
+```
+
+## 🚀 Desarrollo
+
+```bash
+# Iniciar servidor de desarrollo con RapidWatch™
+npm run serve
+
+# O usando el CLI directamente
+rapidfast serve
+```
+
+## 📁 Estructura del proyecto
+
+```
+src/
+├── app/                    # Módulos de la aplicación
+│   ├── app.module.ts      # Módulo principal
+│   ├── app.controller.ts  # Controlador principal
+│   └── test/             # Módulo de prueba
+├── config/               # Configuraciones
+└── main.ts              # Punto de entrada
+```
+
+## 🛠️ Scripts disponibles
+
+| Comando         | Descripción                               |
+|----------------|-------------------------------------------|
+| `npm run serve` | Inicia el servidor con recarga automática |
+| `npm run build` | Compila el proyecto para producción       |
+| `npm start`     | Ejecuta la versión compilada             |
+
+## ⚡ RapidWatch™
+
+Este proyecto incluye RapidWatch™, tecnología propietaria de RapidFAST para recarga automática durante desarrollo.
+
+```bash
+# Iniciar con RapidWatch™
+rapidfast serve
+
+# Configurar puerto y host
+rapidfast serve --port 4000 --host 0.0.0.0
+```
+
+## 📄 Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT.
+
+---
+
+Creado con [RapidFAST Framework](https://github.com/angelitosystems/rapidfast)  
+Desarrollado por [Angelito Systems](https://github.com/angelitosystems)

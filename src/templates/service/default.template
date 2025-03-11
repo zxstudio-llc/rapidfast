@@ -1,0 +1,36 @@
+/**
+ * Servicio para {{name}}
+ * Generado automáticamente por RapidFAST CLI
+ * 
+ * @packageDocumentation
+ * @module Services
+ */
+
+import { Injectable } from '@angelitosystems/rapidfast';
+import { {{PascalCase}}Model } from './{{kebabCase}}.model';
+
+@Injectable()
+export class {{PascalCase}}Service {
+  constructor(private model: {{PascalCase}}Model) {}
+
+  async findAll() {
+    return this.model.find();
+  }
+
+  async findOne(id: string) {
+    return this.model.findById(id);
+  }
+
+  async create(data: any) {
+    const newItem = new this.model(data);
+    return newItem.save();
+  }
+
+  async update(id: string, data: any) {
+    return this.model.findByIdAndUpdate(id, data, { new: true });
+  }
+
+  async delete(id: string) {
+    return this.model.findByIdAndDelete(id);
+  }
+} 

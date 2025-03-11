@@ -1,0 +1,26 @@
+import { DataSource } from 'typeorm';
+import { environment } from './environment';
+
+export const AppDataSource = new DataSource({
+  type: 'postgres',
+  host: environment.DB_HOST || 'localhost',
+  port: parseInt(environment.DB_PORT || '5432'),
+  username: environment.DB_USER || 'postgres',
+  password: environment.DB_PASSWORD || 'postgres',
+  database: environment.DB_NAME || '${kebabCase}',
+  synchronize: true,
+  logging: environment.NODE_ENV === 'development',
+  entities: ['src/entities/**/*.ts'],
+  migrations: ['src/migrations/**/*.ts'],
+  subscribers: ['src/subscribers/**/*.ts'],
+});
+
+export const connectDatabase = async () => {
+  try {
+    await AppDataSource.initialize();
+    console.log('✅ Conexión a PostgreSQL establecida');
+  } catch (error) {
+    console.error('❌ Error al conectar con PostgreSQL:', error);
+    process.exit(1);
+  }
+}; 

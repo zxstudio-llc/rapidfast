@@ -2,7 +2,6 @@
 import "reflect-metadata";
 
 // Exportar todas las funcionalidades del framework
-export * from "./decorators";
 export * from "./core/application";
 export * from "./core/router-manager";
 export * from "./core/middleware-manager";
@@ -11,36 +10,83 @@ export * from "./main";
 export * from "./config/environment";
 export * from "./config/database";
 
-// Exportación explícita del decorador Middleware para asegurar su disponibilidad
-export { Middleware } from "./decorators/index";
+// Core exports
+export * from './core/orm';
+export * from './core/controller';
+export * from './core/module';
+export * from './core/service';
+export * from './core/middleware';
 
-// Re-exportaciones explícitas para asegurar que todos los decoradores estén disponibles
+// Decorators
 export {
   Controller,
+  ControllerMetadata,
+  CONTROLLER_METADATA
+} from './decorators/controller.decorator';
+
+export {
+  Module,
+  ModuleMetadata,
+  ModuleOptions,
+  MODULE_METADATA,
+  MODULE_OPTIONS
+} from './decorators/module.decorator';
+
+export {
   Get,
   Post,
   Put,
   Delete,
   Patch,
   Options,
-  All,
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  Module,
-  Injectable,
-  // Middleware ya está exportado arriba explícitamente
-  UseMiddlewares,
+  Head,
+  METHOD_METADATA,
+  PATH_METADATA
+} from './decorators/http.decorator';
+
+export {
   Req,
   Res,
   Next,
-  Inject
-} from "./decorators";
+  Param,
+  Query,
+  Body,
+  Headers,
+  Session,
+  File,
+  Files,
+  ParamType,
+  PARAM_METADATA
+} from './decorators/param.decorator';
 
-// Re-exportar AppBootstrap como función principal
-export { AppBootstrap } from "./main";
-export { db, Database } from "./config/database";
-export { environment, getEnv, requireEnv } from "./config/environment";
+export {
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiOperationOptions,
+  ApiResponseOptions,
+  ApiTagsOptions,
+  SWAGGER_METADATA
+} from './decorators/swagger.decorator';
+
+// Utils
+export * from './utils/string';
+export * from './utils/path';
+export * from './utils/logger';
+export * from './utils/validation';
+
+// Config
+export * from './config/database';
+export * from './config/environment';
+
+// Main application
+export { RapidFastApplication as Application } from './app/application';
+export * from './app/factory';
+
+// CLI
+export * from './cli/cli';
+export * from './cli/command';
+export * from './cli/factory';
 
 // Mensaje informativo al importar el paquete
 console.log("✨ RapidFAST Framework cargado correctamente");

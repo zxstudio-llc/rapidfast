@@ -1,0 +1,35 @@
+import { Controller, Get, Post, Put, Delete, UseMiddlewares } from '@angelitosystems/rapidfast';
+import { AuthMiddleware } from '../middlewares/auth.middleware';
+import { {{PascalCase}}Service } from './{{camelCase}}.service';
+import { Create{{PascalCase}}Dto, Update{{PascalCase}}Dto } from './dto/{{camelCase}}.dto';
+
+@Controller('{{kebabCase}}')
+@UseMiddlewares([AuthMiddleware])
+export class {{PascalCase}}Controller {
+  constructor(private readonly {{camelCase}}Service: {{PascalCase}}Service) {}
+
+  @Get()
+  async findAll() {
+    return await this.{{camelCase}}Service.findAll();
+  }
+
+  @Get(':id')
+  async findOne(id: number) {
+    return await this.{{camelCase}}Service.findOne(id);
+  }
+
+  @Post()
+  async create(data: Create{{PascalCase}}Dto) {
+    return await this.{{camelCase}}Service.create(data);
+  }
+
+  @Put(':id')
+  async update(id: number, data: Update{{PascalCase}}Dto) {
+    return await this.{{camelCase}}Service.update(id, data);
+  }
+
+  @Delete(':id')
+  async delete(id: number) {
+    return await this.{{camelCase}}Service.delete(id);
+  }
+} 

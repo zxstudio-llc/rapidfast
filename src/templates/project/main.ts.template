@@ -1,0 +1,11 @@
+import "reflect-metadata";
+import { AppBootstrap } from "@angelitosystems/rapidfast";
+import { AppModule } from "./app/app.module";
+
+// Punto de entrada de la aplicación
+if (require.main === module) {
+  AppBootstrap.bootstrap(AppModule).catch((err: Error) => {
+    console.error('❌ Error fatal iniciando la aplicación:', err);
+    process.exit(1);
+  });
+}

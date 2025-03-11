@@ -15,7 +15,13 @@ const program = new Command();
 const packageJson = require('../../../package.json');
 
 // Mostrar banner de bienvenida
-console.log('\n' + chalk.cyan(figlet.textSync('RapidFAST', { font: 'Small' })));
+console.log('\n' + chalk.cyan(figlet.textSync('RapidFAST', {
+  font: 'Small',
+  horizontalLayout: 'default',
+  verticalLayout: 'default'
+})));
+
+console.log(chalk.cyan('\nFramework para desarrollo rápido de APIs - v' + packageJson.version + '\n'));
 
 // Mostrar información del CLI
 console.log(boxen(

@@ -1,5 +1,5 @@
 import * as path from "path";
-import fs from "fs-extra";
+import * as fs from "fs-extra";
 import inquirer from "inquirer";
 import { execSync, ExecSyncOptions } from "child_process";
 import ora from "ora";
@@ -8,317 +8,170 @@ import boxen from "boxen";
 import { SingleBar, Presets } from "cli-progress";
 import logSymbols from "log-symbols";
 import gradient from "gradient-string";
+import { templateManager } from '../templates/template-manager';
+import { existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { generateResource } from './commands/generate';
 
 interface CreateProjectOptions {
   directory?: string;
   skipInstall?: boolean;
   packageManager?: "npm" | "yarn" | "pnpm";
+  template?: string;
+  force?: boolean;
+  dbEngine?: string;
 }
 
 /**
  * Crea un nuevo proyecto RapidFAST con animaciones y estilos mejorados
  */
-export async function createProject(
-  projectName: string,
-  options: CreateProjectOptions
-): Promise<void> {
+export async function createProject(name: string, options: CreateProjectOptions = {}): Promise<void> {
+  const { template = 'default' } = options;
+  const targetDir = join(process.cwd(), name);
+
   try {
-    // Validar que el nombre no contenga caracteres especiales o rutas
-    if (projectName.includes('/') || projectName.includes('\\')) {
-      throw new Error(`El nombre del proyecto no puede contener barras (/ o \\). Usa la opción --directory para especificar una ruta.`);
-    }
-
-    // Determinar el directorio de destino
-    let targetDir: string;
-    
-    if (options.directory) {
-      // Si se especificó un directorio, usarlo como ruta completa o relativa
-      targetDir = path.isAbsolute(options.directory)
-        ? options.directory
-        : path.resolve(process.cwd(), options.directory);
-    } else {
-      // Si no se especificó directorio, crear en el directorio actual + nombre del proyecto
-      targetDir = path.resolve(process.cwd(), projectName);
-    }
-    
-    // Mostrar la ruta donde se creará el proyecto
-    console.log(chalk.blue(`📁 Creando proyecto en: ${targetDir}`));
-    
     // Verificar si el directorio ya existe
-    if (fs.existsSync(targetDir)) {
-      console.log(
-        boxen(
-          chalk.yellow(
-            `${logSymbols.warning} El directorio ${chalk.bold(
-              path.basename(targetDir)
-            )} ya existe.`
-          ),
-          { padding: 1, borderColor: "yellow", borderStyle: "round" }
-        )
-      );
+    if (existsSync(targetDir)) {
+      if (!options.force) {
+        const { shouldOverwrite } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'shouldOverwrite',
+            message: `El directorio ${name} ya existe. ¿Deseas sobrescribirlo?`,
+            default: false
+          }
+        ]);
 
-      const { proceed } = await inquirer.prompt([
+        if (!shouldOverwrite) {
+          console.log(chalk.yellow('❌ Operación cancelada.'));
+          return;
+        }
+
+        // Si el usuario acepta sobrescribir, eliminamos el directorio
+        await fs.remove(targetDir);
+      } else {
+        // Si se especificó --force, eliminamos el directorio sin preguntar
+        await fs.remove(targetDir);
+      }
+    }
+
+    // Preguntar por el tipo de API primero
+    if (!options.template) {
+      const { apiType } = await inquirer.prompt([
         {
-          type: "confirm",
-          name: "proceed",
-          message: "¿Desea continuar y sobrescribir los archivos existentes?",
-          default: false,
-        },
+          type: 'list',
+          name: 'apiType',
+          message: '¿Qué tipo de API deseas crear?',
+          choices: [
+            { name: 'API REST con Autenticación JWT + RapidWatch', value: 'rest-auth' }
+          ],
+          default: 'rest-auth'
+        }
       ]);
 
-      if (!proceed) {
-        console.log(chalk.yellow(`${logSymbols.error} Operación cancelada.`));
-        return;
-      }
-    }
-
-    // Verificar permisos de escritura antes de proceder
-    try {
-      // Verificar si tenemos permisos en el directorio padre
-      const parentDir = path.dirname(targetDir);
-      if (!fs.existsSync(parentDir)) {
-        throw new Error(`El directorio padre ${parentDir} no existe. Verifique la ruta e inténtelo de nuevo.`);
-      }
-      
-      // Intentar crear un archivo temporal en el directorio padre para verificar permisos
-      const testFile = path.join(parentDir, '.rapidfast-write-test');
-      fs.writeFileSync(testFile, 'test');
-      fs.unlinkSync(testFile);
-    } catch (error: any) {
-      console.error(chalk.red('❌ Error de permisos:'));
-      console.error(chalk.red(`No tienes permisos de escritura en el directorio. Prueba ejecutar el comando como administrador o usar una ruta diferente.`));
-      throw error;
-    }
-
-    // Crear directorio del proyecto
-    try {
-      fs.ensureDirSync(targetDir);
-    } catch (error: any) {
-      if (error.code === 'EPERM') {
-        throw new Error(`No tienes permisos para crear el directorio ${targetDir}. Intenta ejecutar como administrador o usar una ruta diferente.`);
-      }
-      throw error;
-    }
-
-    // Iniciar animación de carga con estilo mejorado
-    const spinner = ora({
-      text: chalk.blue("Preparando estructura del proyecto..."),
-      spinner: "dots",
-      color: "blue",
-    }).start();
-
-    try {
-      // Crear estructura del proyecto con barra de progreso
-      spinner.text = chalk.blue("Creando directorios del proyecto...");
-
-      // Crear estructura de directorios
-      const dirs = [
-        "src",
-        "src/app",
-        "src/app/api",
-        "src/app/api",
-        "src/controllers",
-        "src/config",
-        "src/core",
-        "src/decorators",
-        "src/types",
-        "src/templates",
-      ];
-
-      spinner.succeed(chalk.green("Estructura de directorios creada"));
-
-      // Crear archivos con barra de progreso
-      const progressBar = new SingleBar(
+      // Preguntar por el motor de base de datos
+      const { dbEngine } = await inquirer.prompt([
         {
-          format:
-            chalk.cyan("Creando archivos del proyecto |") +
-            "{bar}" +
-            chalk.cyan("| {percentage}% || {value}/{total} archivos"),
-          barCompleteChar: "\u2588",
-          barIncompleteChar: "\u2591",
-          hideCursor: true,
-        },
-        Presets.shades_classic
-      );
+          type: 'list',
+          name: 'dbEngine',
+          message: '¿Qué motor de base de datos deseas usar?',
+          choices: [
+            { name: 'MongoDB con RapidORM', value: 'mongodb' },
+            { name: 'MySQL con RapidORM', value: 'mysql' },
+            { name: 'PostgreSQL con RapidORM', value: 'postgres' },
+            { name: 'SQLite con RapidORM', value: 'sqlite' }
+          ],
+          default: 'mongodb'
+        }
+      ]);
 
-      progressBar.start(100, 0);
+      // Combinar las selecciones para determinar el template
+      options.template = `rest-auth-${dbEngine}`;
+      options.dbEngine = dbEngine;
+    }
 
-      // En un escenario real, copiaríamos de las plantillas incluidas.
-      createProjectStructure(targetDir, projectName, (progress) => {
-        progressBar.update(progress);
+    // Preguntar por el package manager si no se especificó
+    if (!options.packageManager) {
+      const { selectedPackageManager } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'selectedPackageManager',
+          message: '¿Qué gestor de paquetes deseas usar?',
+          choices: [
+            { name: 'npm', value: 'npm' },
+            { name: 'yarn', value: 'yarn' },
+            { name: 'pnpm', value: 'pnpm' }
+          ],
+          default: 'npm'
+        }
+      ]);
+      options.packageManager = selectedPackageManager;
+    }
+
+    // Crear el directorio del proyecto
+    const spinner = ora('Creando proyecto...').start();
+    mkdirSync(targetDir, { recursive: true });
+
+    try {
+      // Generar la estructura básica del proyecto
+      await generateResource({
+        name: 'app',
+        type: 'resource',
+        directory: join(targetDir, 'src'),
+        crud: true,
+        template: options.template
       });
 
-      progressBar.update(100);
-      progressBar.stop();
+      // Crear archivos de configuración
+      await createProjectStructure(targetDir, name, () => {}, options.dbEngine);
 
-      console.log(
-        chalk.green(
-          `${logSymbols.success} Estructura del proyecto creada correctamente`
-        )
-      );
+      spinner.succeed('Proyecto creado exitosamente');
 
-      // Instalar dependencias si no se omite
+      // Instalar dependencias si no se especificó --skip-install
       if (!options.skipInstall) {
-        console.log("");
-
-        // Preguntar qué gestor de paquetes usar si no se especificó
-        let packageManager = options.packageManager;
-
-        if (!packageManager) {
-          const { selectedManager } = await inquirer.prompt([
-            {
-              type: "list",
-              name: "selectedManager",
-              message: "¿Qué gestor de paquetes desea utilizar?",
-              choices: [
-                {
-                  name: "npm (recomendado para mayor compatibilidad)",
-                  value: "npm",
-                },
-                { name: "yarn", value: "yarn" },
-                { name: "pnpm", value: "pnpm" },
-              ],
-              default: "npm",
-            },
-          ]);
-
-          packageManager = selectedManager;
-        }
-
-        // Comprobar si el gestor de paquetes está instalado
-        let isPackageManagerAvailable = false;
+        const installSpinner = ora('Instalando dependencias...').start();
         try {
-          const spinner = ora({
-            text: chalk.blue(
-              `Verificando disponibilidad de ${packageManager}...`
-            ),
-            spinner: "dots",
-            color: "blue",
-          }).start();
-
-          try {
-            execSync(`${packageManager} --version`, { stdio: "ignore" });
-            spinner.succeed(chalk.green(`${packageManager} está disponible`));
-            isPackageManagerAvailable = true;
-          } catch (error) {
-            spinner.warn(
-              chalk.yellow(
-                `${packageManager} no está instalado o no está disponible en la ruta.`
-              )
-            );
-
-            const { fallbackToNpm } = await inquirer.prompt([
-              {
-                type: "confirm",
-                name: "fallbackToNpm",
-                message: `¿Desea intentar con npm?`,
-                default: true,
-              },
-            ]);
-
-            if (fallbackToNpm) {
-              packageManager = "npm";
-              try {
-                execSync("npm --version", { stdio: "ignore" });
-                spinner.info(
-                  chalk.blue("npm está disponible, usando como alternativa...")
-                );
-                isPackageManagerAvailable = true;
-              } catch (error) {
-                spinner.fail(
-                  chalk.red(
-                    "npm no está disponible. No se pueden instalar dependencias automáticamente."
-                  )
-                );
-              }
-            } else {
-              spinner.info("Omitiendo instalación de dependencias.");
-            }
-          }
+          const command = `${options.packageManager} install`;
+          execSync(command, { 
+            cwd: targetDir, 
+            stdio: 'pipe',
+            encoding: 'utf-8'
+          });
+          installSpinner.succeed('Dependencias instaladas exitosamente');
         } catch (error) {
-          console.error(
-            chalk.red("Error verificando el gestor de paquetes:"),
-            error
-          );
-        }
-
-        if (isPackageManagerAvailable) {
-          // Intentar instalar con permisos elevados si es necesario
-          const success = await installDependencies(
-            targetDir,
-            packageManager || "npm" // Asegurar que siempre sea string
-          );
-
-          if (!success) {
-            console.log(
-              boxen(
-                chalk.yellow(
-                  `${logSymbols.warning} No se pudieron instalar las dependencias automáticamente.\n`
-                ) +
-                  chalk.white("Puede instalarlas manualmente ejecutando:") +
-                  "\n\n" +
-                  chalk.cyan(`  cd ${targetDir}`) +
-                  "\n" +
-                  chalk.cyan(`  ${packageManager} install`) +
-                  "\n\n" +
-                  chalk.dim(
-                    "Si el problema persiste, intente ejecutar el comando como administrador."
-                  ),
-                {
-                  padding: 1,
-                  margin: 1,
-                  borderColor: "yellow",
-                  borderStyle: "round",
-                }
-              )
-            );
-
-            options.skipInstall = true;
-          }
-        } else {
-          options.skipInstall = true;
+          installSpinner.fail('Error instalando dependencias');
+          console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Error desconocido'}`));
         }
       }
 
-      // Mostrar resumen del proyecto creado
-      console.log("\n");
-      console.log(
-        boxen(
-          gradient.pastel(`¡Proyecto ${projectName} creado exitosamente!`) +
-            "\n\n" +
-            chalk.cyan("Para comenzar:") +
-            "\n\n" +
-            chalk.bold(`  cd ${targetDir}`) +
-            "\n" +
-            (options.skipInstall
-              ? chalk.bold("  npm install    # o yarn/pnpm install") + "\n"
-              : "") +
-            chalk.bold(
-              "  rapidfast serve o rapidfast    # inicia el servidor de desarrollo"
-            ) +
-            "\n\n" +
-            chalk.dim("Gracias por usar RapidFAST Framework!"),
-          { padding: 1, margin: 1, borderColor: "green", borderStyle: "double" }
-        )
-      );
+      // Mostrar mensaje de éxito
+      console.log(boxen(
+        `${chalk.green('¡Proyecto creado exitosamente!')}\n\n` +
+        `Para comenzar:\n\n` +
+        `  ${chalk.cyan(`cd ${name}`)}\n` +
+        `  ${chalk.cyan(`${options.packageManager} run dev`)}\n\n` +
+        `Para más información, visita la documentación:\n` +
+        `  ${chalk.blue('https://github.com/angelitosystems/rapidfast#readme')}`,
+        {
+          padding: 1,
+          margin: 1,
+          borderStyle: 'round',
+          borderColor: 'green'
+        }
+      ));
+
     } catch (error) {
-      spinner.fail(chalk.red("Error al crear el proyecto"));
-      console.error(error);
+      spinner.fail('Error creando el proyecto');
       throw error;
     }
-  } catch (error: any) {
-    console.error(chalk.red("Error al crear el proyecto:"), error.message);
-    if (error.code) {
-      console.error(chalk.dim(`Código de error: ${error.code}`));
+
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(chalk.red(`Error creando el proyecto: ${error.message}`));
+    } else {
+      console.error(chalk.red('Error desconocido creando el proyecto'));
     }
-    
-    // Sugerir soluciones según el tipo de error
-    if (error.code === 'EPERM') {
-      console.log(chalk.yellow('\nSugerencia: Prueba alguna de estas soluciones:'));
-      console.log('1. Ejecuta el comando como administrador');
-      console.log('2. Especifica una ruta diferente con la opción --directory');
-      console.log(`3. Usa: rapidfast new mi-proyecto --directory "./mi-carpeta"`);
-    }
+    process.exit(1);
   }
 }
 
@@ -328,13 +181,14 @@ export async function createProject(
 function createProjectStructure(
   projectPath: string,
   projectName: string,
-  onProgress: (progress: number) => void
+  onProgress: (progress: number) => void,
+  dbEngine: string = 'mongodb'
 ): void {
   // Crear solo los directorios esenciales y que tendrán contenido
   const dirs = [
     "src",
     "src/app",
-    "src/app/test", // Cambiado de "src/app/api" a "src/app/test"
+    "src/app/test",
   ];
 
   // Crear directorios (10% del progreso)
@@ -349,28 +203,67 @@ function createProjectStructure(
     onProgress(10 + Math.floor((90 * step) / total));
   };
 
-  // Lista de archivos a crear
+  // Lista de archivos a crear y sus plantillas correspondientes
+  const templateVars = { projectName };
+  
+  // Definir los archivos a generar y sus correspondientes plantillas
   const files = [
-    { path: "package.json", content: createPackageJson(projectName) },
-    { path: "tsconfig.json", content: createTsConfig() },
-    { path: ".env", content: createEnvFile(projectName) },
-    { path: ".env.example", content: createEnvFile(projectName) },
-    { path: ".gitignore", content: createGitIgnore() },
-    { path: "README.md", content: createReadme(projectName) },
-    { path: "src/main.ts", content: createMainFile() },
-    { path: "src/app/app.module.ts", content: createAppModule() },
-    { path: "src/app/app.controller.ts", content: createAppController() },
-    { path: "src/app/test/test.module.ts", content: createTestModule() },       // Cambiado de api.module.ts
-    { path: "src/app/test/test.controller.ts", content: createTestController() }, // Cambiado de api.controller.ts
+    { 
+      path: "package.json", 
+      templatePath: `project/package-${dbEngine}.template`
+    },
+    { 
+      path: "tsconfig.json", 
+      templatePath: "project/tsconfig.json.template"
+    },
+    { 
+      path: ".env", 
+      templatePath: `project/env-${dbEngine}.template`
+    },
+    { 
+      path: ".env.example", 
+      templatePath: `project/env-${dbEngine}.template`
+    },
+    { 
+      path: ".gitignore", 
+      templatePath: "project/gitignore.template"
+    },
+    { 
+      path: "README.md", 
+      templatePath: "project/readme.md.template"
+    },
+    { 
+      path: "src/main.ts", 
+      templatePath: "project/main.ts.template"
+    },
+    { 
+      path: "src/app/app.module.ts", 
+      templatePath: "project/app.module.ts.template"
+    },
+    { 
+      path: "src/app/app.controller.ts", 
+      templatePath: "project/app.controller.ts.template"
+    },
+    { 
+      path: "src/app/test/test.module.ts", 
+      templatePath: "project/test.module.ts.template"
+    },
+    { 
+      path: "src/app/test/test.controller.ts", 
+      templatePath: "project/test.controller.ts.template"
+    }
   ];
 
-  // Total de archivos para calcular progreso
-  const totalFiles = files.length;
-
-  // Escribir cada archivo y actualizar el progreso
+  // Crear cada archivo
   files.forEach((file, index) => {
-    fs.writeFileSync(path.join(projectPath, file.path), file.content);
-    updateFileProgress(index + 1, totalFiles);
+    const filePath = path.join(projectPath, file.path);
+    const content = templateManager.loadTemplate(file.templatePath);
+    const processedContent = content.replace(/\{\{([^}]+)\}\}/g, (_: string, key: string) => {
+      const trimmedKey = key.trim();
+      return templateVars[trimmedKey as keyof typeof templateVars] || `{{${trimmedKey}}}`;
+    });
+    fs.writeFileSync(filePath, processedContent);
+    updateFileProgress(index + 1, files.length);
   });
 }
 

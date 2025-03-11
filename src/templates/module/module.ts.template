@@ -1,0 +1,13 @@
+import { Module } from '@angelitosystems/rapidfast';
+import { {{className}}Controller } from './{{fileName}}.controller';
+import { {{className}}Service } from './{{fileName}}.service';
+// Puedes importar middlewares si es necesario
+// import { SomeMiddleware } from './middlewares/some.middleware';
+
+@Module({
+  controllers: [{{className}}Controller],
+  providers: [{{className}}Service],
+  // Puedes agregar middlewares específicos del módulo
+  // middlewares: [SomeMiddleware]
+})
+export class {{className}}Module {}

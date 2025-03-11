@@ -1,0 +1,66 @@
+/**
+ * Controlador para {{name}}
+ * Generado automáticamente por RapidFAST CLI
+ * 
+ * @packageDocumentation
+ * @module Controllers
+ */
+
+import { Controller, Get, Post, Put, Delete, Req, Res } from '@angelitosystems/rapidfast';
+import { Request, Response } from 'express';
+import { {{name}}Service } from '../services/{{nameLower}}.service';
+import { {{name}}Dto } from '../dto/{{nameLower}}.dto';
+import { Param, Body } from '@core/decorators';
+
+@Controller('/{{nameLower}}s')
+export class {{name}}Controller {
+  constructor(private readonly service: {{name}}Service) {}
+
+  @Get()
+  async findAll(@Res() res: Response) {
+    const items = await this.service.findAll();
+    return res.json(items);
+  }
+
+  @Get('/:id')
+  async findOne(@Req() req: Request, @Res() res: Response) {
+    const { id } = req.params;
+    const item = await this.service.findOne(id);
+    
+    if (!item) {
+      return res.status(404).json({ message: '{{name}} no encontrado' });
+    }
+    
+    return res.json(item);
+  }
+
+  @Post()
+  async create(@Req() req: Request, @Res() res: Response) {
+    const newItem = await this.service.create(req.body);
+    return res.status(201).json(newItem);
+  }
+
+  @Put('/:id')
+  async update(@Req() req: Request, @Res() res: Response) {
+    const { id } = req.params;
+    const updatedItem = await this.service.update(id, req.body);
+    
+    if (!updatedItem) {
+      return res.status(404).json({ message: '{{name}} no encontrado' });
+    }
+    
+    return res.json(updatedItem);
+  }
+
+  @Delete('/:id')
+  async remove(@Req() req: Request, @Res() res: Response) {
+    const { id } = req.params;
+    const deleted = await this.service.delete(id);
+    
+    if (!deleted) {
+      return res.status(404).json({ message: '{{name}} no encontrado' });
+    }
+    
+    return res.status(204).send();
+  }
+} 

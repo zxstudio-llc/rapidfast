@@ -1,0 +1,56 @@
+import { Controller, Get, Post, Put, Delete, Req, Res } from '@angelitosystems/rapidfast';
+import { Request, Response } from 'express';
+import { {{className}}Service } from './{{fileName}}.service';
+
+@Controller('/{{resourceName}}s')
+export class {{className}}Controller {
+  constructor(private {{propertyName}}Service: {{className}}Service) {}
+
+  @Get()
+  async findAll(@Res() res: Response) {
+    const items = await this.{{propertyName}}Service.findAll();
+    return res.json(items);
+  }
+
+  @Get('/:id')
+  async findOne(@Req() req: Request, @Res() res: Response) {
+    const { id } = req.params;
+    const item = await this.{{propertyName}}Service.findOne(id);
+    
+    if (!item) {
+      return res.status(404).json({ message: '{{className}} no encontrado' });
+    }
+    
+    return res.json(item);
+  }
+
+  @Post()
+  async create(@Req() req: Request, @Res() res: Response) {
+    const newItem = await this.{{propertyName}}Service.create(req.body);
+    return res.status(201).json(newItem);
+  }
+
+  @Put('/:id')
+  async update(@Req() req: Request, @Res() res: Response) {
+    const { id } = req.params;
+    const updatedItem = await this.{{propertyName}}Service.update(id, req.body);
+    
+    if (!updatedItem) {
+      return res.status(404).json({ message: '{{className}} no encontrado' });
+    }
+    
+    return res.json(updatedItem);
+  }
+
+  @Delete('/:id')
+  async remove(@Req() req: Request, @Res() res: Response) {
+    const { id } = req.params;
+    const deleted = await this.{{propertyName}}Service.delete(id);
+    
+    if (!deleted) {
+      return res.status(404).json({ message: '{{className}} no encontrado' });
+    }
+    
+    return res.status(204).send();
+  }
+}

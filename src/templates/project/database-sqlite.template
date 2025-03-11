@@ -1,0 +1,23 @@
+import { DataSource } from 'typeorm';
+import { environment } from './environment';
+import { join } from 'path';
+
+export const AppDataSource = new DataSource({
+  type: 'sqlite',
+  database: join(process.cwd(), environment.DB_FILE || 'database.sqlite'),
+  synchronize: true,
+  logging: environment.NODE_ENV === 'development',
+  entities: ['src/entities/**/*.ts'],
+  migrations: ['src/migrations/**/*.ts'],
+  subscribers: ['src/subscribers/**/*.ts'],
+});
+
+export const connectDatabase = async () => {
+  try {
+    await AppDataSource.initialize();
+    console.log('✅ Conexión a SQLite establecida');
+  } catch (error) {
+    console.error('❌ Error al conectar con SQLite:', error);
+    process.exit(1);
+  }
+}; 

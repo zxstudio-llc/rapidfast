@@ -1,0 +1,7 @@
+import { Module } from "@angelitosystems/rapidfast";
+import { TestController } from "./test.controller";
+
+@Module({
+  controllers: [TestController],
+})
+export class TestModule {}

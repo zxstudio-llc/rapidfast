@@ -1,0 +1,12 @@
+import { Middleware } from '@angelitosystems/rapidfast';
+import { Request, Response, NextFunction } from 'express';
+
+@Middleware()
+export class {{className}}Middleware {
+  use(req: Request, res: Response, next: NextFunction) {
+    console.log(`[{{className}}Middleware] ${req.method} ${req.url}`);
+    // Agrega tu lógica de middleware aquí
+    
+    next();
+  }
+}

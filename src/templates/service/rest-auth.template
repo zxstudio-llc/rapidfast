@@ -1,0 +1,40 @@
+import { Injectable } from '@angelitosystems/rapidfast';
+import { RapidORM } from '@angelitosystems/rapidfast/orm';
+
+@Injectable()
+export class ${PascalCase}Service {
+  private model: RapidORM;
+
+  constructor() {
+    this.model = new RapidORM('${camelCase}s', {
+      timestamps: true,
+      auth: true
+    });
+  }
+
+  async findAll(userId: string) {
+    return this.model.find({ userId });
+  }
+
+  async findOne(id: string | number, userId: string) {
+    return this.model.findOne({ id, userId });
+  }
+
+  async create(data: any, userId: string) {
+    return this.model.create({
+      ...data,
+      userId
+    });
+  }
+
+  async update(id: string | number, data: any, userId: string) {
+    return this.model.update(
+      { id, userId },
+      data
+    );
+  }
+
+  async remove(id: string | number, userId: string) {
+    return this.model.delete({ id, userId });
+  }
+} 
