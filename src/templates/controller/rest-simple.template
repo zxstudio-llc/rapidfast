@@ -1,0 +1,74 @@
+import { Controller, Get, Post, Put, Delete, Req, Res, RapidTags, RapidOperation, RapidResponse } from '@angelitosystems/rapidfast';
+import { Request, Response } from 'express';
+import { ${PascalCase}Service } from './${kebabCase}.service';
+import { Create${PascalCase}Dto, Update${PascalCase}Dto } from './${kebabCase}.dto';
+
+@Controller('/${kebabCase}s')
+@RapidTags(['${PascalCase}'])
+export class ${PascalCase}Controller {
+  constructor(private readonly ${camelCase}Service: ${PascalCase}Service) {}
+
+  @Get()
+  @RapidOperation({ description: 'Obtener todos los ${camelCase}s' })
+  @RapidResponse(200, 'Lista de ${camelCase}s obtenida correctamente')
+  async findAll(@Res() res: Response) {
+    const items = await this.${camelCase}Service.findAll();
+    return res.json(items);
+  }
+
+  @Get('/:id')
+  @RapidOperation({ description: 'Obtener un ${camelCase} por ID' })
+  @RapidResponse(200, '${PascalCase} encontrado')
+  @RapidResponse(404, '${PascalCase} no encontrado')
+  async findOne(@Req() req: Request, @Res() res: Response) {
+    const { id } = req.params;
+    const item = await this.${camelCase}Service.findById(id);
+    
+    if (!item) {
+      return res.status(404).json({ message: '${PascalCase} no encontrado' });
+    }
+    
+    return res.json(item);
+  }
+
+  @Post()
+  @RapidOperation({ description: 'Crear un nuevo ${camelCase}' })
+  @RapidResponse(201, '${PascalCase} creado correctamente')
+  @RapidResponse(400, 'Datos inválidos')
+  async create(@Req() req: Request, @Res() res: Response) {
+    const dto = new Create${PascalCase}Dto(req.body);
+    const newItem = await this.${camelCase}Service.create(dto);
+    return res.status(201).json(newItem);
+  }
+
+  @Put('/:id')
+  @RapidOperation({ description: 'Actualizar un ${camelCase}' })
+  @RapidResponse(200, '${PascalCase} actualizado correctamente')
+  @RapidResponse(404, '${PascalCase} no encontrado')
+  async update(@Req() req: Request, @Res() res: Response) {
+    const { id } = req.params;
+    const dto = new Update${PascalCase}Dto(req.body);
+    const updated = await this.${camelCase}Service.update(id, dto);
+    
+    if (!updated) {
+      return res.status(404).json({ message: '${PascalCase} no encontrado' });
+    }
+    
+    return res.json(updated);
+  }
+
+  @Delete('/:id')
+  @RapidOperation({ description: 'Eliminar un ${camelCase}' })
+  @RapidResponse(200, '${PascalCase} eliminado correctamente')
+  @RapidResponse(404, '${PascalCase} no encontrado')
+  async remove(@Req() req: Request, @Res() res: Response) {
+    const { id } = req.params;
+    const deleted = await this.${camelCase}Service.delete(id);
+    
+    if (!deleted) {
+      return res.status(404).json({ message: '${PascalCase} no encontrado' });
+    }
+    
+    return res.json({ message: '${PascalCase} eliminado correctamente' });
+  }
+} 

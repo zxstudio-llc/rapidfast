@@ -1,0 +1,26 @@
+import { DataSource } from 'typeorm';
+import { environment } from './environment';
+
+export const AppDataSource = new DataSource({
+  type: 'mysql',
+  host: environment.DB_HOST || 'localhost',
+  port: parseInt(environment.DB_PORT || '3306'),
+  username: environment.DB_USER || 'root',
+  password: environment.DB_PASSWORD || 'root',
+  database: environment.DB_NAME || '${kebabCase}',
+  synchronize: true,
+  logging: environment.NODE_ENV === 'development',
+  entities: ['src/entities/**/*.ts'],
+  migrations: ['src/migrations/**/*.ts'],
+  subscribers: ['src/subscribers/**/*.ts'],
+});
+
+export const connectDatabase = async () => {
+  try {
+    await AppDataSource.initialize();
+    console.log('✅ Conexión a MySQL establecida');
+  } catch (error) {
+    console.error('❌ Error al conectar con MySQL:', error);
+    process.exit(1);
+  }
+}; 

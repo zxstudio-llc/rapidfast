@@ -1,0 +1,86 @@
+/**
+ * Data Transfer Objects (DTOs) para {{name}}
+ * Generado automáticamente por RapidFAST CLI
+ * 
+ * NOTA: Este es un archivo de plantilla.
+ * Las variables {{name}} serán reemplazadas durante la generación.
+ * 
+ * @packageDocumentation
+ * @module DTOs
+ */
+
+import {
+  IsString,
+  IsRequired,
+  IsEmail,
+  MinLength
+} from '@core/validation';
+
+/**
+ * DTO para crear un nuevo {{name}}
+ */
+export class Create{{name}}Dto {
+  @IsRequired()
+  @IsString()
+  name!: string;
+}
+
+/**
+ * DTO para actualizar un {{name}} existente
+ */
+export class Update{{name}}Dto {
+  @IsString()
+  name?: string;
+}
+
+/**
+ * DTO para la respuesta de {{name}}
+ */
+export class {{name}}ResponseDto {
+  @IsRequired()
+  @IsString()
+  id!: string;
+
+  @IsRequired()
+  @IsString()
+  name!: string;
+
+  @IsRequired()
+  createdAt!: Date;
+
+  @IsRequired()
+  updatedAt!: Date;
+}
+
+/**
+ * DTO principal para {{name}}
+ */
+export class {{name}}Dto {
+  @IsRequired()
+  @IsString()
+  name!: string;
+
+  @IsRequired()
+  @IsEmail()
+  email!: string;
+
+  @IsRequired()
+  @IsString()
+  @MinLength(6)
+  password!: string;
+}
+
+export interface {{PascalCase}}Dto {
+  id?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  // Define tus propiedades aquí
+}
+
+// Exportar todo como un módulo
+export default {
+  Create{{name}}Dto,
+  Update{{name}}Dto,
+  {{name}}ResponseDto,
+  {{name}}Dto
+}; 

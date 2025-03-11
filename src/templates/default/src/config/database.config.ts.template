@@ -1,0 +1,25 @@
+import { DatabaseConfig } from '@core/orm/config';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const config: DatabaseConfig = {
+  type: '{{dbType}}',
+  {{#if useHost}}
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '{{defaultPort}}'),
+  {{/if}}
+  database: process.env.DB_NAME || '{{name}}',
+  {{#unless useSQLite}}
+  username: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  {{/unless}}
+  options: {
+    {{#if useMongoDB}}
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+    {{/if}}
+  }
+};
+
+export default config; 

@@ -1,0 +1,28 @@
+import { Controller, Get, Post, ApiTags, ApiOperation, Req, Res } from "@angelitosystems/rapidfast";
+import { Request, Response } from "express";
+
+@ApiTags("Test")
+@Controller("/test")
+export class TestController {
+  @Get()
+  @ApiOperation({ summary: "Endpoint de prueba" })
+  test() {
+    return { message: "¡Test exitoso!" };
+  }
+  
+  @Get("/hello")
+  @ApiOperation({ summary: "Endpoint de saludo" })
+  hello() {
+    return { message: "¡Hola desde el módulo de pruebas!" };
+  }
+  
+  @Post("/echo")
+  @ApiOperation({ summary: "Eco de datos enviados" })
+  echo(@Req() req: Request) {
+    return { 
+      message: "Eco de datos recibidos", 
+      data: req.body,
+      timestamp: new Date().toISOString()
+    };
+  }
+}

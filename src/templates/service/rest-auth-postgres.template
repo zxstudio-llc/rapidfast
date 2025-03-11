@@ -1,0 +1,36 @@
+import { Injectable } from '@angelitosystems/rapidfast';
+import { InjectRepository } from '@angelitosystems/rapidfast';
+import { Repository } from 'typeorm';
+import { ${PascalCase} } from './${kebabCase}.model';
+import { Create${PascalCase}Dto, Update${PascalCase}Dto } from './${kebabCase}.dto';
+
+@Injectable()
+export class ${PascalCase}Service {
+  constructor(
+    @InjectRepository(${PascalCase})
+    private readonly repository: Repository<${PascalCase}>
+  ) {}
+
+  async findAll(): Promise<${PascalCase}[]> {
+    return this.repository.find();
+  }
+
+  async findById(id: string): Promise<${PascalCase}> {
+    return this.repository.findOne({ where: { id } });
+  }
+
+  async create(dto: Create${PascalCase}Dto): Promise<${PascalCase}> {
+    const newItem = this.repository.create(dto);
+    return this.repository.save(newItem);
+  }
+
+  async update(id: string, dto: Update${PascalCase}Dto): Promise<${PascalCase}> {
+    await this.repository.update(id, dto);
+    return this.findById(id);
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const result = await this.repository.delete(id);
+    return result.affected > 0;
+  }
+} 

@@ -1,0 +1,138 @@
+import { Controller, Get, Post, Put, Delete, Req, Res, UseMiddlewares, RapidTags, RapidOperation, RapidResponse, RapidParam, RapidBody, RapidSchema } from '@angelitosystems/rapidfast';
+import { Request, Response } from 'express';
+import { AuthMiddleware } from '../middleware/auth.middleware';
+import { ${PascalCase}Service } from './${kebabCase}.service';
+
+@Controller('/${kebabCase}s')
+@RapidTags(['${PascalCase}'])
+@UseMiddlewares(AuthMiddleware)
+@RapidSchema({
+  type: 'object',
+  properties: {
+    id: { type: 'string', description: 'ID único del ${camelCase}' },
+    // Agrega aquí las propiedades de tu modelo
+    createdAt: { type: 'string', format: 'date-time' },
+    updatedAt: { type: 'string', format: 'date-time' }
+  }
+})
+export class ${PascalCase}Controller {
+  constructor(private readonly ${camelCase}Service: ${PascalCase}Service) {}
+
+  @Get()
+  @RapidOperation({ 
+    summary: 'Listar ${camelCase}s',
+    description: 'Obtiene una lista de todos los ${camelCase}s',
+    security: [{ bearerAuth: [] }]
+  })
+  @RapidResponse(200, 'Lista de ${camelCase}s obtenida correctamente', {
+    type: 'array',
+    items: { $ref: '#/components/schemas/${PascalCase}' }
+  })
+  @RapidResponse(401, 'No autorizado')
+  async findAll(@Req() req: Request, @Res() res: Response) {
+    const items = await this.${camelCase}Service.findAll(req.user?.id);
+    return res.json(items);
+  }
+
+  @Get(':id')
+  @RapidOperation({ 
+    summary: 'Obtener ${camelCase}',
+    description: 'Obtiene un ${camelCase} por su ID',
+    security: [{ bearerAuth: [] }]
+  })
+  @RapidParam('id', 'ID del ${camelCase}', { in: 'path', required: true })
+  @RapidResponse(200, '${PascalCase} encontrado', {
+    $ref: '#/components/schemas/${PascalCase}'
+  })
+  @RapidResponse(401, 'No autorizado')
+  @RapidResponse(404, '${PascalCase} no encontrado')
+  async findOne(@Req() req: Request, @Res() res: Response) {
+    const item = await this.${camelCase}Service.findOne(req.params.id, req.user?.id);
+    if (!item) {
+      return res.status(404).json({
+        message: '${PascalCase} no encontrado'
+      });
+    }
+    return res.json(item);
+  }
+
+  @Post()
+  @RapidOperation({ 
+    summary: 'Crear ${camelCase}',
+    description: 'Crea un nuevo ${camelCase}',
+    security: [{ bearerAuth: [] }]
+  })
+  @RapidBody('Datos del ${camelCase}', {
+    required: true,
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/${PascalCase}' }
+      }
+    }
+  })
+  @RapidResponse(201, '${PascalCase} creado correctamente', {
+    $ref: '#/components/schemas/${PascalCase}'
+  })
+  @RapidResponse(400, 'Datos inválidos')
+  @RapidResponse(401, 'No autorizado')
+  async create(@Req() req: Request, @Res() res: Response) {
+    const item = await this.${camelCase}Service.create(req.body, req.user?.id);
+    return res.status(201).json(item);
+  }
+
+  @Put(':id')
+  @RapidOperation({ 
+    summary: 'Actualizar ${camelCase}',
+    description: 'Actualiza un ${camelCase} existente',
+    security: [{ bearerAuth: [] }]
+  })
+  @RapidParam('id', 'ID del ${camelCase}', { in: 'path', required: true })
+  @RapidBody('Datos actualizados del ${camelCase}', {
+    required: true,
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/${PascalCase}' }
+      }
+    }
+  })
+  @RapidResponse(200, '${PascalCase} actualizado correctamente', {
+    $ref: '#/components/schemas/${PascalCase}'
+  })
+  @RapidResponse(401, 'No autorizado')
+  @RapidResponse(404, '${PascalCase} no encontrado')
+  async update(@Req() req: Request, @Res() res: Response) {
+    const item = await this.${camelCase}Service.update(
+      req.params.id,
+      req.body,
+      req.user?.id
+    );
+    if (!item) {
+      return res.status(404).json({
+        message: '${PascalCase} no encontrado'
+      });
+    }
+    return res.json(item);
+  }
+
+  @Delete(':id')
+  @RapidOperation({ 
+    summary: 'Eliminar ${camelCase}',
+    description: 'Elimina un ${camelCase} existente',
+    security: [{ bearerAuth: [] }]
+  })
+  @RapidParam('id', 'ID del ${camelCase}', { in: 'path', required: true })
+  @RapidResponse(200, '${PascalCase} eliminado correctamente')
+  @RapidResponse(401, 'No autorizado')
+  @RapidResponse(404, '${PascalCase} no encontrado')
+  async remove(@Req() req: Request, @Res() res: Response) {
+    const item = await this.${camelCase}Service.remove(req.params.id, req.user?.id);
+    if (!item) {
+      return res.status(404).json({
+        message: '${PascalCase} no encontrado'
+      });
+    }
+    return res.json({
+      message: '${PascalCase} eliminado correctamente'
+    });
+  }
+} 

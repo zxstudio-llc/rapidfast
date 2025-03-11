@@ -1,0 +1,32 @@
+import { Response } from "express";
+import { ApiOperation, ApiResponse, ApiTags, Controller, Get, Res } from "@angelitosystems/rapidfast";
+
+@ApiTags("Aplicación")
+@Controller()
+export class AppController {
+  @Get("/")
+  @ApiOperation({ summary: "Página de inicio" })
+  @ApiResponse({
+    status: 200,
+    description: "Retorna un mensaje de bienvenida",
+  })
+  async home(@Res() res: Response) {
+    return res.status(200).json({
+      message: "¡Bienvenido a tu aplicación RapidFAST!",
+      documentation: "/api-docs"
+    });
+  }
+
+  @Get("/health")
+  @ApiOperation({ summary: "Verificación de estado" })
+  @ApiResponse({
+    status: 200,
+    description: "Retorna el estado de la aplicación",
+  })
+  async health(@Res() res: Response) {
+    return res.status(200).json({
+      status: "OK",
+      uptime: process.uptime()
+    });
+  }
+}

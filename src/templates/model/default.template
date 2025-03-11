@@ -1,0 +1,21 @@
+/**
+ * Modelo para {{name}}
+ * Generado automáticamente por RapidFAST CLI
+ * 
+ * @packageDocumentation
+ * @module Models
+ */
+
+import { Schema, model } from 'mongoose';
+import { {{PascalCase}}Dto } from './{{kebabCase}}.dto';
+
+const {{camelCase}}Schema = new Schema<{{PascalCase}}Dto>({
+  // Define tus campos aquí
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+}, {
+  timestamps: true,
+  versionKey: false
+});
+
+export const {{PascalCase}}Model = model<{{PascalCase}}Dto>('{{PascalCase}}', {{camelCase}}Schema); 

@@ -1,0 +1,46 @@
+import { Injectable } from '@angelitosystems/rapidfast';
+import { MongoDBModel } from '@angelitosystems/rapidfast/mongodb';
+import { RapidWatch } from '@angelitosystems/rapidfast';
+
+@Injectable()
+@RapidWatch({
+  path: '/${kebabCase}s',
+  interval: 5000
+})
+export class ${PascalCase}Service {
+  private model: MongoDBModel;
+
+  constructor() {
+    this.model = new MongoDBModel('${camelCase}s', {
+      timestamps: true,
+      auth: true
+    });
+  }
+
+  async findAll(userId: string) {
+    return this.model.find({ userId });
+  }
+
+  async findOne(id: string, userId: string) {
+    return this.model.findOne({ _id: id, userId });
+  }
+
+  async create(data: any, userId: string) {
+    return this.model.create({
+      ...data,
+      userId
+    });
+  }
+
+  async update(id: string, data: any, userId: string) {
+    return this.model.findOneAndUpdate(
+      { _id: id, userId },
+      data,
+      { new: true }
+    );
+  }
+
+  async remove(id: string, userId: string) {
+    return this.model.findOneAndDelete({ _id: id, userId });
+  }
+} 

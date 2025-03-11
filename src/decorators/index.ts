@@ -222,3 +222,21 @@ export function UseMiddlewares(...middlewares: Function[]): ClassDecorator & Met
     }
   };
 }
+
+// Exportar decoradores base
+export * from './controller.decorator';
+export * from './route.decorator';
+export * from './module.decorator';
+export * from './inject.decorator';
+export * from './middleware.decorator';
+
+// Exportar decoradores de RapidWatch y documentación
+export {
+  RapidTags,
+  RapidOperation,
+  RapidResponse,
+  RapidParam,
+  RapidBody,
+  RapidSchema,
+  RapidWatch
+} from './rapidwatch.decorator';

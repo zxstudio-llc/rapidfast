@@ -1,0 +1,23 @@
+# Configuración del servidor
+PORT=3000
+HOST=localhost
+NODE_ENV=development
+
+# Base de datos PostgreSQL
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=${kebabCase}
+
+# JWT
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=1d
+
+# Configuración de la API
+API_PREFIX=/api
+API_VERSION=v1
+
+# Configuración de RapidWatch
+RAPIDWATCH_ENABLED=true
+RAPIDWATCH_PATH=/docs 

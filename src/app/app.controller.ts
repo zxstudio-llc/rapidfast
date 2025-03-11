@@ -1,11 +1,25 @@
 import { Response } from "express";
-import { ApiOperation, ApiResponse, ApiTags, Controller, Get, Res } from "@angelitosystems/rapidfast";
+import { ApiOperation, ApiResponse, ApiTags } from "../decorators/swagger.decorator";
+import { Controller } from "../decorators/controller.decorator";
+import { Get } from "../decorators/http.decorator";
+import { Res } from "../decorators/param.decorator";
 import { environment } from "../config/environment";
 import { db } from "../config/database";
 
 @ApiTags("App")
 @Controller()
 export class AppController {
+  execute(res: Response): any {
+    return this.test(res);
+  }
+
+  @Get()
+  @ApiOperation({ summary: "Endpoint de prueba" })
+  @ApiResponse({ status: 200, description: "Retorna un mensaje de prueba" })
+  test(@Res() res: Response) {
+    return res.json({ message: "¡Hola desde RapidFAST!" });
+  }
+  
   @Get("/")
   @ApiOperation({ summary: "Página de inicio" })
   home() {

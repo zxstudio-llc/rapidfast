@@ -1,0 +1,12 @@
+import mongoose from 'mongoose';
+import { environment } from './environment';
+
+export const connectDatabase = async () => {
+  try {
+    await mongoose.connect(environment.MONGODB_URI || 'mongodb://localhost:27017/${kebabCase}');
+    console.log('✅ Conexión a MongoDB establecida');
+  } catch (error) {
+    console.error('❌ Error al conectar con MongoDB:', error);
+    process.exit(1);
+  }
+}; 

@@ -1,0 +1,28 @@
+import { IsString, IsOptional } from 'class-validator';
+
+export class Create${PascalCase}Dto {
+  @IsString()
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  constructor(data: Partial<Create${PascalCase}Dto>) {
+    Object.assign(this, data);
+  }
+}
+
+export class Update${PascalCase}Dto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  constructor(data: Partial<Update${PascalCase}Dto>) {
+    Object.assign(this, data);
+  }
+} 
